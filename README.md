@@ -7,6 +7,6 @@ Documentations
 ==============
 
 
-Quick Guide on Getting Started with Google Cloud
+Quick Guide on Getting Started with Amazon Cloud
 ================================================
 
