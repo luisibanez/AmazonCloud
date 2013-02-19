@@ -145,7 +145,7 @@ sub labelVolumes
 	my $timeoutcounter = 30;
 	my $timeout = 1;
 	
-	#continuously run describe instance command to determine if there are 4 listed attached volumes
+	#continuously run describe instance command to determine if there are more than 1 listed attached volumes
 	while($timeoutcounter > 0)
 	{
 		my @ec2cmd = `ec2-describe-instances $instanceID`;
