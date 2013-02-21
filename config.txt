@@ -5,14 +5,18 @@
 KEY_PAIR: YOUR_NAME_modENCODE__Key
 SECURITY_GROUP: YOUR_NAME_modENCODE_Group
 INSTANCE_NAME: YOUR_NAME_modENCODE_Instance
+
+#
 # AUTHORIZED_PORTS will be ignored if the security group defined above exists.
+# List all the ports (single or a range) that you would like to enable and separate them with a ","
+# Ex: AUTHORIZED_PORTS: 80, 22, 13200-14300, 45
+#
 AUTHORIZED_PORTS: YOUR_PORT_NUMBERS
 
 #
 # modENCODE Amazon Machine Image (AMI) ID
 # No changes are needed below this line
 AMI: ami-c65dcbaf
-
 INSTANCE_TYPE: m1.medium
 REGION: us-east-1
 AVAILABILITY_ZONE: us-east-1a
