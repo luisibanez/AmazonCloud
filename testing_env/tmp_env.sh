@@ -6,8 +6,8 @@ current_dir=`pwd`
 export JAVA_HOME=`/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java_home`
 
 # set your AWS credentials 
-export AWS_ACCESS_KEY=AKIAIHVNPCOHDOHX2NUQ
-export AWS_SECRET_KEY=ljeZio9cK+x7RfyrQvcusQpyC46vpErOIbuj3zjP
+export AWS_ACCESS_KEY=
+export AWS_SECRET_KEY=
 
 ############################################
 # no changes are needed below this line
