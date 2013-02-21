@@ -57,14 +57,12 @@ printf ("\n %-15s \t %-30s", "SECURITY_GROUP:", $securityGroup);
 printf ("\n %-15s \t %-30s", "INSTANCE_TYPE:", $instanceType);
 printf ("\n %-15s \t %-30s", "REGION:", $region);
 printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
+printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
 print "\n";
 
 createKeypair($keyPair,$region);
 createSecurityGroup($securityGroup, $region, $authorizedPort);
 createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
-# remove temp Galaxy user data 
-#system ("rm $userDataFile");
-
 
 
 
@@ -88,38 +86,47 @@ sub parseOptions
 		@line = split(" ", $i, 2); #split into only two fields. 
 		if($i =~ /^AMI:/)
 		{
-			$ami = $line[1];	
+			$ami = $line[1];
+			chomp($ami);
 		}
 		elsif($i =~ /^KEY_PAIR:/)
 		{
 			$keyPair = $line[1];
+			chomp($keyPair);
 		}
 		elsif($i =~ /^SECURITY_GROUP:/)
 		{
 			$securityGroup = $line[1];
+			chomp($securityGroup);
 		}
 		elsif($i =~ /^INSTANCE_TYPE:/)
 		{
 			$instanceType = $line[1];
+			chomp($instanceType);
 		}
 		elsif($i =~ /^REGION:/)
 		{
 			$region = $line[1];
+			chomp($region);
 		}
 		elsif($i =~ /^AVAILABILITY_ZONE:/)
 		{
 			$availabilityZone = $line[1];
+			chomp($availabilityZone);
 		}
 		elsif($i =~ /^INSTANCE_NAME:/)
 		{
 			$instanceName = $line[1];
-		} elsif($i =~ /^AUTHORIZED_PORTS:/)
+			chomp($instanceName);
+		} 
+		elsif($i =~ /^AUTHORIZED_PORTS:/)
 		{
 			$authorizedPort = $line[1];
+			chomp($authorizedPort);
 		}
 	}
 	close FILE;
-	return ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName. $authorizedPort);
+	return ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort);
 
 }
 
@@ -164,6 +171,7 @@ sub createSecurityGroup
 {
 	my $group = shift;
 	my $region = shift;
+	my $authorizedPort = shift;
 
 	my $cmdOutput = `ec2-describe-group --region $region `;
 
@@ -175,9 +183,14 @@ sub createSecurityGroup
 	else 
 	{
 		print "\nCreating security group '$group' ";
-		system ("ec2-create-group $group --region $region -d \"Security group to use with modENCODE AMI ( created by modENCODE_galaxy_create.pl )\"");
-		system ("ec2-authorize $group -P tcp -p 22");       # SSH
-		system ("ec2-authorize $group -P tcp -p 80");		# HTTP
+		# Create a security group first
+		$cmdOutput = `ec2-create-group $group --region $region -d \"Security group to use with modENCODE AMI ( created by modENCODE_galaxy_create.pl )\"`;
+		# Proceed to add all the ports
+		my @ports = split (",", $authorizedPort);
+		foreach my $i (@ports) {
+			$i =~ s/^\s+//;
+			$cmdOutput = `ec2-authorize $group -P tcp -p $i`;
+		}
 		print "... done\n";
 	}
 }
@@ -380,7 +393,7 @@ sub GetURL
 sub usage
 {
 	print "\n";
-	print "This script creates an instance of Galaxy on Amazon. Please send questions/comments to help\@modencode.org.";
+	print "This script creates an instance of modENCODE AMI on Amazon. Please send questions/comments to help\@modencode.org.";
 	print "\n\n\tusage: perl " . basename($0) . "  [ CONFIG_FILE ] ";
 	print "\n\n\t\tFor example: \t $0 config.txt";
 	print "\n\n";
