@@ -4,15 +4,15 @@
 KEY_PAIR: Ajen_2013Coop
 SECURITY_GROUP: Test_script_group
 INSTANCE_NAME: Ajen_Test_public
-AUTHORIZED_PORTS: 22, 80, 13000-13200
+AUTHORIZED_PORTS: 20, 21, 22, 80, 13000-13200, 12000-12200
 
 #
 # Galaxy Amazon Machine Image (AMI) ID
 # Also, see http://wiki.g2.bx.psu.edu/CloudMan/AWS/GettingStarted
 # No changes are needed below this line
-AMI: ami-da58aab3
+AMI: ami-edeb4384
 
-INSTANCE_TYPE: m1.medium
+INSTANCE_TYPE: m1.large
 REGION: us-east-1
 AVAILABILITY_ZONE: us-east-1a
 

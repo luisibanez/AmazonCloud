@@ -1,3 +1,6 @@
+current_dir=`pwd`
+
+
 
 # set JAVA_HOME
 export JAVA_HOME=`/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java_home`
