@@ -14,24 +14,67 @@ use strict;
 use warnings;
 use File::Basename;
 
-#global variables
+
+#function calls
 #=================================================================
-my $keyPair;
-my $securityGroup;
-my $instanceType;
-my $instanceName;
-my $ami;
-my $region = ""; 
-my $availabilityZone = "";
+if(@ARGV != 1)
+{
+	usage();
+}
+
+# Set config file's name
+my $configFile = $ARGV[0];
+# Check for AWS security key
+checkEnvironments();
+# Parse the config file
+my ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort) = parseOptions($configFile);
+
+# modENCODE AMI is only supported in US EAST region
+if (((length($region) > 0) && ($region !~ /east/)) 
+	|| ((length($availabilityZone) > 0) && ($availabilityZone !~ /east/)))
+{
+	print "\n\nAt the moment, modENCODE AMI is supported only in US East region!  Please change your configuration!\n\n";
+	exit (1);
+}
 	
+# get the default region and availability zone if users didn't put them in config file
+if ((length($region) == 0) || (length($availabilityZone)==0)) 
+{
+	($region, $availabilityZone) = getRegionAndAvailableZone();
+}
+
+if ( (length($keyPair) == 0) || (length($securityGroup) == 0) || (length($instanceType) == 0) || (length($instanceName) == 0) || (length($ami) == 0) ) {
+	print "\n\nPlease check your config file and make sure all options are defined!\n\n";
+	exit (1);
+}
+	
+#print out existing options
+printf ("\nLaunching modENCODE instance with the following information as defined in config file '$ARGV[0]':");
+printf ("\n %-15s \t %-30s", "AMI:", $ami);
+printf ("\n %-15s \t %-30s", "INSTANCE_NAME:", $instanceName);
+printf ("\n %-15s \t %-30s", "KEY_PAIR:", $keyPair);
+printf ("\n %-15s \t %-30s", "SECURITY_GROUP:", $securityGroup);
+printf ("\n %-15s \t %-30s", "INSTANCE_TYPE:", $instanceType);
+printf ("\n %-15s \t %-30s", "REGION:", $region);
+printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
+print "\n";
+
+createKeypair($keyPair,$region);
+createSecurityGroup($securityGroup, $region, $authorizedPort);
+createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
+# remove temp Galaxy user data 
+#system ("rm $userDataFile");
+
+
+
 
 #function declarations
 #=================================================================
 
-sub parseOptions()
+sub parseOptions
 {
 	#assign config filename, open and read its contents into an array
-	my $filename = $ARGV[0];
+	my $filename = shift;
 	my @line;
 	my @options;
 
@@ -42,7 +85,7 @@ sub parseOptions()
 	#	label: value
 	foreach my $i (@options)
 	{
-		@line = split(" ", $i);
+		@line = split(" ", $i, 2); #split into only two fields. 
 		if($i =~ /^AMI:/)
 		{
 			$ami = $line[1];	
@@ -70,10 +113,13 @@ sub parseOptions()
 		elsif($i =~ /^INSTANCE_NAME:/)
 		{
 			$instanceName = $line[1];
+		} elsif($i =~ /^AUTHORIZED_PORTS:/)
+		{
+			$authorizedPort = $line[1];
 		}
 	}
-
 	close FILE;
+	return ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName. $authorizedPort);
 
 }
 
@@ -129,9 +175,9 @@ sub createSecurityGroup
 	else 
 	{
 		print "\nCreating security group '$group' ";
-		$cmdOutput = `ec2-create-group $group --region $region -d \"Security group to use with modENCODE AMI ( created by modENCODE_galaxy_create.pl )\"`;
-		$cmdOutput = `ec2-authorize $group -P tcp -p 22`;       # SSH
-		$cmdOutput = `ec2-authorize $group -P tcp -p 80`;		# HTTP
+		system ("ec2-create-group $group --region $region -d \"Security group to use with modENCODE AMI ( created by modENCODE_galaxy_create.pl )\"");
+		system ("ec2-authorize $group -P tcp -p 22");       # SSH
+		system ("ec2-authorize $group -P tcp -p 80");		# HTTP
 		print "... done\n";
 	}
 }
@@ -142,7 +188,7 @@ sub labelVolumes
 	my $instanceID = shift;
 	my $instanceName = shift;
 	my $readycounter = 0;
-	my $timeoutcounter = 30;
+	my $timeoutcounter = 20;
 	my $timeout = 1;
 	
 	#continuously run describe instance command to determine if there are more than 1 listed attached volumes
@@ -181,7 +227,7 @@ sub labelVolumes
 		}
 	}
 	
-	#if in the case that 900s have passed we will timeout and exit -- this should only happen in extreme cases 
+	#if in the case that 600s have passed we will timeout and exit -- this should only happen in extreme cases 
 	if($timeout == 1)
 	{
 		print "\n\nOne or more volumes are not attached within the allowed time!\n";
@@ -331,61 +377,13 @@ sub GetURL
 
 
 #function which prints out the proper format of the function when the inputs are given incorrectly
-sub usage()
+sub usage
 {
 	print "\n";
 	print "This script creates an instance of Galaxy on Amazon. Please send questions/comments to help\@modencode.org.";
 	print "\n\n\tusage: perl " . basename($0) . "  [ CONFIG_FILE ] ";
 	print "\n\n\t\tFor example: \t $0 config.txt";
 	print "\n\n";
-	exit 2;
+	exit (2);
 }
 
-
-#function calls
-#=================================================================
-if(@ARGV != 1)
-{
-	usage();
-}
-else
-{
-	checkEnvironments();
-	parseOptions();
-
-	# Galaxy is only supported inteh US EAST region - see http://wiki.g2.bx.psu.edu/CloudMan
-	if (((length($region) > 0) && ($region !~ /east/)) 
-		|| ((length($availabilityZone) > 0) && ($availabilityZone !~ /east/)))
-	{
-		print "\n\nAt the moment, Galaxy is supported only in US East region!  Please change your configuration!\n\n";
-		exit (1);
-	}
-	
-	# get the default region and availability zone if users didn't put them in config file
-	if ((length($region) == 0) || (length($availabilityZone)==0)) 
-	{
-		($region, $availabilityZone) = getRegionAndAvailableZone();
-	}
-
-	if ( (length($keyPair) == 0) || (length($securityGroup) == 0) || (length($instanceType) == 0) || (length($instanceName) == 0) || (length($ami) == 0) ) {
-		print "\n\nPlease check your config file and make sure all options are defined!\n\n";
-		exit (1);
-	}
-	
-	#print out existing options
-	printf ("\nLaunching modENCODE instance with the following information as defined in config file '$ARGV[0]':");
-	printf ("\n %-15s \t %-30s", "AMI:", $ami);
-	printf ("\n %-15s \t %-30s", "INSTANCE_NAME:", $instanceName);
-	printf ("\n %-15s \t %-30s", "KEY_PAIR:", $keyPair);
-	printf ("\n %-15s \t %-30s", "SECURITY_GROUP:", $securityGroup);
-	printf ("\n %-15s \t %-30s", "INSTANCE_TYPE:", $instanceType);
-	printf ("\n %-15s \t %-30s", "REGION:", $region);
-	printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
-	print "\n";
-
-	createKeypair($keyPair,$region);
-	createSecurityGroup($securityGroup, $region);
-	createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
-	# remove temp Galaxy user data 
-	#system ("rm $userDataFile");
-}

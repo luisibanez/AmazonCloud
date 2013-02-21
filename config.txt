@@ -5,10 +5,11 @@
 KEY_PAIR: YOUR_NAME_modENCODE__Key
 SECURITY_GROUP: YOUR_NAME_modENCODE_Group
 INSTANCE_NAME: YOUR_NAME_modENCODE_Instance
+# AUTHORIZED_PORTS will be ignored if the security group defined above exists.
+AUTHORIZED_PORTS: YOUR_PORT_NUMBERS
 
 #
 # modENCODE Amazon Machine Image (AMI) ID
-# Also, see http://wiki.g2.bx.psu.edu/CloudMan/AWS/GettingStarted
 # No changes are needed below this line
 AMI: ami-c65dcbaf
 
