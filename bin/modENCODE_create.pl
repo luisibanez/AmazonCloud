@@ -60,9 +60,9 @@ printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
 printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
 print "\n";
 
-createKeypair($keyPair,$region);
+#createKeypair($keyPair,$region);
 createSecurityGroup($securityGroup, $region, $authorizedPort);
-createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
+#createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
 
 
 
@@ -190,6 +190,7 @@ sub createSecurityGroup
 		foreach my $i (@ports) {
 			$i =~ s/^\s+//;
 			$cmdOutput = `ec2-authorize $group -P tcp -p $i`;
+			print "\nAuthorized Port: $i ... created ...";
 		}
 		print "... done\n";
 	}
@@ -225,8 +226,8 @@ sub labelVolumes
 			$timeout = 0;
 
 			#call name volumes function and exit loop 
-			print "\n\nAll modENCODE volumes have been attached ...\n";
 			system("bin/modENCODE_namevolumes.pl $instanceID $instanceName");
+			print "\n\nAll modENCODE volumes have been attached ...\n";
 			last;
 		}
 		else
