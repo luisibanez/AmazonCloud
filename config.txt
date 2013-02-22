@@ -2,9 +2,9 @@
 #
 # modENCODE instance 
 #
-KEY_PAIR: YOUR_NAME_modENCODE__Key
-SECURITY_GROUP: YOUR_NAME_modENCODE_Group
-INSTANCE_NAME: YOUR_NAME_modENCODE_Instance
+KEY_PAIR: YOUR_KEY_NAME
+SECURITY_GROUP: YOUR_GROUP_NAME
+INSTANCE_NAME: YOUR_INSTANCE_NAME
 
 #
 # AUTHORIZED_PORTS will be ignored if the security group defined above exists.
@@ -14,8 +14,7 @@ INSTANCE_NAME: YOUR_NAME_modENCODE_Instance
 AUTHORIZED_PORTS: YOUR_PORT_NUMBERS
 
 #
-# modENCODE Amazon Machine Image (AMI) ID
-# No changes are needed below this line
+# Amazon Machine Image (AMI) ID to be used 
 AMI: ami-c65dcbaf
 INSTANCE_TYPE: m1.medium
 REGION: us-east-1
