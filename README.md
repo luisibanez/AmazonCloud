@@ -1,7 +1,9 @@
 AmazonCloud
 ===========
 
-This GitHub repository contains a quick reference for getting started with Amazon Cloud.
+This GitHub repository contains a quick reference for getting started with Amazon Cloud.  
+
+Contributed by: Fei-Yang Jen and Quang Trinh
 
 Documentations
 ==============
