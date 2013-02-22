@@ -5,9 +5,7 @@
 # Ziru Zhou, ziruzhou@gmail.com
 # Kar Ming Chu, mr.kar.ming.chu@gmail.com
 # Quang Trinh, quang.trinh@gmail.com
-# modified by:
 # Fei-Yang(Arthur) Jen
-# please send your questions/comments to modENCODE DCC <help@modencode.org>
 #
 
 use strict;
@@ -24,8 +22,10 @@ if(@ARGV != 1)
 
 # Set config file's name
 my $configFile = $ARGV[0];
+
 # Check for AWS security key
 checkEnvironments();
+
 # Parse the config file
 my ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort) = parseOptions($configFile);
 
@@ -60,9 +60,9 @@ printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
 printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
 print "\n";
 
-#createKeypair($keyPair,$region);
+createKeypair($keyPair,$region);
 createSecurityGroup($securityGroup, $region, $authorizedPort);
-#createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
+createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
 
 
 
@@ -226,7 +226,7 @@ sub labelVolumes
 			$timeout = 0;
 
 			#call name volumes function and exit loop 
-			system("bin/modENCODE_namevolumes.pl $instanceID $instanceName");
+			system("bin/name_volumes.pl $instanceID $instanceName");
 			print "\n\nAll modENCODE volumes have been attached ...\n";
 			last;
 		}
@@ -246,7 +246,7 @@ sub labelVolumes
 	{
 		print "\n\nOne or more volumes are not attached within the allowed time!\n";
 		print "Please label your Galaxy volumes manually later by running:";
-		print "\n\n\tbin/modENCODE_galaxy_namevolumes.pl $instanceID $instanceName";
+		print "\n\n\tbin/name_volumes.pl $instanceID $instanceName";
 		print "\n";
 	}
 }
@@ -394,7 +394,7 @@ sub GetURL
 sub usage
 {
 	print "\n";
-	print "This script creates an instance of modENCODE AMI on Amazon. Please send questions/comments to help\@modencode.org.";
+	print "This script creates an instance of an AMI on Amazon Cloud. Please send questions/comments to help\@modencode.org.";
 	print "\n\n\tusage: perl " . basename($0) . "  [ CONFIG_FILE ] ";
 	print "\n\n\t\tFor example: \t $0 config.txt";
 	print "\n\n";
