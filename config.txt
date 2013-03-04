@@ -3,7 +3,7 @@
 # modENCODE instance 
 #
 KEY_PAIR: YOUR_KEY_NAME
-SECURITY_GROUP: YOUR_GROUP_NAME
+SECURITY_GROUP: YOUR_SECURITY_GROUP_NAME
 INSTANCE_NAME: YOUR_INSTANCE_NAME
 
 #
@@ -14,7 +14,11 @@ INSTANCE_NAME: YOUR_INSTANCE_NAME
 AUTHORIZED_PORTS: YOUR_PORT_NUMBERS
 
 #
-# Amazon Machine Image (AMI) ID to be used 
+# Amazon Machine Image (AMI) ID to be used
+# You can leave the following as default
+# ami-c65dcbaf (Uniform Processing/Peak Calling Image, 2013-02-08)
+# ami-edeb4384 (modENCODE Data Image v14 (26 Jul 2012))
+# 
 AMI: ami-c65dcbaf
 INSTANCE_TYPE: m1.medium
 REGION: us-east-1
