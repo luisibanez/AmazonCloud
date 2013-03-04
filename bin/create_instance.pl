@@ -2,15 +2,8 @@
 
 #
 # written by the following people from modENCODE DCC group:
-<<<<<<< HEAD
-# Fei-Yang(Arthur) Jen
-# Quang Trinh
-=======
-# Ziru Zhou, ziruzhou@gmail.com
-# Kar Ming Chu, mr.kar.ming.chu@gmail.com
 # Fei-Yang(Arthur) Jen, arthur20249@gmail.com
 # Quang Trinh, quang.trinh@gmail.com
->>>>>>> updated bin/create_instance.pl
 #
 
 use strict;
