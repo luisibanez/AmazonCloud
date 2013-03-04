@@ -3,6 +3,11 @@
 use warnings;
 use strict;
 
+#
+# written by the following people from modENCODE DCC group:
+# Fei-Yang(Arthur) Jen, arthur20249@gmail.com
+# Quang Trinh, quang.trinh@gmail.com
+#
 
 #function calls
 #=================================================================
