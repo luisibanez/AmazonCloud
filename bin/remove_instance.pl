@@ -23,38 +23,15 @@ my $configFile = $ARGV[0];
 checkEnvironments();
 
 # Parse the config file
-my ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort) = parseOptions($configFile);
-
-# modENCODE AMI is only supported in US EAST region
-if (((length($region) > 0) && ($region !~ /east/)) 
-	|| ((length($availabilityZone) > 0) && ($availabilityZone !~ /east/)))
-{
-	print "\n\nAt the moment, modENCODE AMI is supported only in US East region!  Please change your configuration!\n\n";
-	exit (1);
-}
-	
-# get the default region and availability zone if users didn't put them in config file
-if ((length($region) == 0) || (length($availabilityZone)==0)) 
-{
-	($region, $availabilityZone) = getRegionAndAvailableZone();
-}
-
-if ( (length($keyPair) == 0) || (length($securityGroup) == 0) || (length($instanceType) == 0) || (length($instanceName) == 0) || (length($ami) == 0) ) {
-	print "\n\nPlease check your config file and make sure all options are defined!\n\n";
-	exit (1);
-}
+my $instanceName = parseOptions($configFile);
 	
 #print out existing options
-printf ("\nLaunching modENCODE instance with the following information as defined in config file '$ARGV[0]':");
-printf ("\n %-15s \t %-30s", "AMI:", $ami);
+printf ("\nTerminating modENCODE instance with the following information as defined in config file '$ARGV[0]':");
 printf ("\n %-15s \t %-30s", "INSTANCE_NAME:", $instanceName);
-printf ("\n %-15s \t %-30s", "KEY_PAIR:", $keyPair);
-printf ("\n %-15s \t %-30s", "SECURITY_GROUP:", $securityGroup);
-printf ("\n %-15s \t %-30s", "INSTANCE_TYPE:", $instanceType);
-printf ("\n %-15s \t %-30s", "REGION:", $region);
-printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
-printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
 print "\n";
+
+# Delete the instnace
+delete_instnace($instanceName);
 
 
 #function declarations
@@ -74,49 +51,106 @@ sub parseOptions
 	#	label: value
 	foreach my $i (@options)
 	{
-		@line = split(" ", $i, 2); #split into only two fields. 
-		if($i =~ /^AMI:/)
-		{
-			$ami = $line[1];
-			chomp($ami);
-		}
-		elsif($i =~ /^KEY_PAIR:/)
-		{
-			$keyPair = $line[1];
-			chomp($keyPair);
-		}
-		elsif($i =~ /^SECURITY_GROUP:/)
-		{
-			$securityGroup = $line[1];
-			chomp($securityGroup);
-		}
-		elsif($i =~ /^INSTANCE_TYPE:/)
-		{
-			$instanceType = $line[1];
-			chomp($instanceType);
-		}
-		elsif($i =~ /^REGION:/)
-		{
-			$region = $line[1];
-			chomp($region);
-		}
-		elsif($i =~ /^AVAILABILITY_ZONE:/)
-		{
-			$availabilityZone = $line[1];
-			chomp($availabilityZone);
-		}
-		elsif($i =~ /^INSTANCE_NAME:/)
+		@line = split(" ", $i);
+		if($i =~ /^INSTANCE_NAME:/)
 		{
 			$instanceName = $line[1];
-			chomp($instanceName);
 		} 
-		elsif($i =~ /^AUTHORIZED_PORTS:/)
-		{
-			$authorizedPort = $line[1];
-			chomp($authorizedPort);
-		}
 	}
 	close FILE;
-	return ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort);
+	return $instanceName;
 
 }
+
+#function to check if the enviornment has been set, if not run ". env.sh"
+sub checkEnvironments
+{
+	# check to see if AWS_ACCESS_KEY and AWS_SECRET_KEY variables are set 
+	if ((length($ENV{'AWS_ACCESS_KEY'}) == 0) || (length($ENV{'AWS_SECRET_KEY'}) == 0)) {
+		print "\nPlease set your AWS_ACCESS_KEY and AWS_SECRET_KEY environment variables - see README file on how to do this.\n\n";
+		exit(1);
+	}
+}
+
+sub getInstanceID {
+
+	my $instanceName = shift;
+
+	# Find the instacne that we want to delete and collect the output
+	my $cmdOut = `ec2-describe-instances | grep "$instanceName"`;
+	my $instanceID = "";
+
+	if (length($cmdOut) == 0) {
+		print "\nERROR: ";
+		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instanceName in the config.txt";
+		print "\n\tPlease check your config file ... \n\n";
+		exit (2);
+	} else {
+		my @line = split("\t", $cmdOut);
+		$instanceID = $line[2];
+		return $instanceID;
+	}
+}
+
+
+sub delete_instnace {
+	my $instanceName = shift;
+	my $instanceID = getInstanceID($instanceName);
+	my $complete = 0;
+	my $counter = 40;
+	my $cmdOut;
+
+	print "\nDeleting instance: $instanceName \($instanceID\) ... it may take a few secons ... \n\n";
+	# Deleting the instance and collect the output
+	$cmdOut = `ec2-terminate-instances $instanceID`;
+	if ($? == 0) {
+		
+		while (!$complete) {
+	
+			#sleep for 3s before trying again
+			sleep 3;
+			# Deleting the instance and collect the output
+			$cmdOut = `ec2-terminate-instances $instanceID`;
+			my @line = split("\t", $cmdOut);
+			my $previous_status = $line[2];
+			chomp($previous_status);
+			my $current_status = $line[3];
+			chomp($current_status);
+			
+			if ($previous_status eq "terminated" && $current_status eq "terminated") {
+		 		$complete = 1;
+		 	} elsif ($counter == 0) {
+		 		# After 120s (2 mins) has passed, we will automatially bounce the execution due to excessive time spent on waiting for response.
+		 		print "\nUnable to delete instance: $instanceID. Please connect Amazon or terminate your instance through Amazon's web ineterface\n\n";
+		 		exit (2);
+		 	}
+		 	else {
+		 		$counter --; 
+		 	}
+
+		}
+		print "\nInstnace: $instanceID has been terminated ... Done ...\n\n";
+
+	} else {
+		print "ERROR: Invalid instanceID: $instanceID ... \n\n";
+		exit (2);
+	}
+
+}
+
+
+#function which prints out the proper format of the function when the inputs are given incorrectly
+sub usage
+{
+	print "\n";
+	print "This script creates an instance of an AMI on Amazon Cloud. Please send questions/comments to help\@modencode.org.";
+	print "\n\n\tusage: perl " . basename($0) . "  [ CONFIG_FILE ] ";
+	print "\n\n\t\tFor example: \t $0 config.txt";
+	print "\n\n";
+	exit (2);
+}
+
+
+
+
+
