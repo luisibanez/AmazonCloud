@@ -2,10 +2,8 @@
 
 #
 # written by the following people from modENCODE DCC group:
-# Ziru Zhou, ziruzhou@gmail.com
-# Kar Ming Chu, mr.kar.ming.chu@gmail.com
 # Fei-Yang(Arthur) Jen
-# Quang Trinh, quang.trinh@gmail.com
+# Quang Trinh
 #
 
 use strict;
