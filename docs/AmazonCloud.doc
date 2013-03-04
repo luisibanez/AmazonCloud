@@ -48,8 +48,8 @@ This config file will be used in Step 5 with bin/create_instance.pl to launch th
  AUTHORIZED_PORTS: YOUR_PORT_NUMBERS
  	Ports to be enabled in your security group to allow access to your instance through those ports.
 
-AMI: - |- ami-c65dcbaf (Uniform Processing/Peak Calling Image, 2013-02-08)
- 	     |- ami-edeb4384 (modENCODE Data Image v14 (26 Jul 2012))
+AMI: - ami-c65dcbaf (Uniform Processing/Peak Calling Image, 2013-02-08)
+     - ami-edeb4384 (modENCODE Data Image v14 (26 Jul 2012))
        (*** These two images will be combined this week. ***)
     
     Latest modENCODE DCC AMI's ID
