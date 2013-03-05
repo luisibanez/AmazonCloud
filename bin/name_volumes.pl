@@ -12,6 +12,8 @@ my $newtag;
 #function calls===============================
 print "Instance ID: $instanceid\n";
 print "Instance Name: $instanceName\n";
+print "Volumn Prefix : $volumePrefix\n";
+
 get_volumeid();
 
 #function definitions=========================
@@ -31,10 +33,11 @@ sub get_volumeid
 			my @line = split("\t", $i);
 			$volid = @line[2];
 			$voltag = @line[1];
-			print "volumeid: $volid adding tag: ${instanceName}_modENCODE_${counter}\n";
-			$newtag = "${instanceName}_modENCODE_${counter}";
+			$newtag = "${instanceid}_${instanceName}_${counter}";
+			print "volumeid: $volid adding tag: ${newtag}\n";
 			my $addtagcmd = `ec2-create-tags $volid --tag Name=$newtag`;
 			$counter++;
 		}
 	}
 }
+

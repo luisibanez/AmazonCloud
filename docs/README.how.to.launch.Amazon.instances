@@ -1,0 +1,78 @@
+
+This file describes how to use scripts in this GitHub repository to launch instances on Amazon Cloud.
+If you have any questions about this, please email help@modencode.org.
+
+
+Step 1.  Create your Amazon EC2 account if you don't already have one.  Go to http://aws.amazon.com, click 
+on 'Sign Up Now' and follow the instructions.  Keep your Amazon access and secret keys handy because 
+you will need them later on.
+
+Step 2. Use git to clone the latest copy of this GitHub repository 
+
+  > cd 
+  > git https://github.com/qtrinh/AmazonCloud.git
+  > cd AmazonCloud
+ 
+
+Step 3. Edit 'env.sh' file and set your JAVA_HOME, AWS_ACCESS_KEY, and AWS_SECRET_KEY environment variables.  
+Set your environments by doing the following:
+
+ > . env.sh 
+
+ Test and make sure your environments are set correctly by doing the following:
+
+ > ec2-describe-regions
+
+  If you are able to run the above command then your environments are set correctly.  If you are not able to 
+run the above command then see the below link on how to setup your EC2 API tools:
+
+   http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/SettingUp_CommandLine.html
+
+
+Step 4. Edit 'config.txt' to include configurations for your Amazon instance.
+These attributes are used in Step 5 to launch your Amazon instance.
+
+ KEY_PAIR: YOUR_KEYPAIR_NAME
+   Keypair name to use to login or ssh to your instance.  Default value is 'YOUR_KEYPAIR_NAME'.
+
+ SECURITY_GROUP: YOUR_SECURITY_GROUP_NAME
+   Security group to be used by the instance.  Default value is 'YOUR_SECURITY_GROUP_NAME'.
+    
+ INSTANCE_NAME: YOUR_INSTANCE_NAME
+   Label or name of your Amazon instance. Default value is 'YOUR_INSTANCE_NAME'.
+ 
+ AUTHORIZED_PORTS: YOUR_PORT_NUMBERS
+   Ports to be enabled in your security group to allow access to your Amazon instance.
+
+ AMI: YOUR_AMI_ID
+   AMI of instance to use. 
+
+ INSTANCE_TYPE: m1.medium
+    Amazon instance type.  Default value is 'm1.medium'. 
+    For other Amazon instance types, see http://aws.amazon.com/ec2/instance-types
+
+ REGION: us-east-1
+    Amazon region to launch the instance in.  Default value is 'us-east-1'.
+
+ AVAILABILITY_ZONE: us-east-1a
+    Amazon zone to launch the instance in.  Default value is 'us-east-1a'.
+
+
+Step 5. Launch your instance by using bin/create_instance.pl.  Run the script by itself to 
+get its usage.  To launch an instance with the configuration file created in Step 4, do the 
+following:
+
+  > bin/create_instance.pl config.txt 
+
+  Your Amazon instance may take a couple of minutes to start.  For your convenience, this script 
+also outputs your instance name/URL, and the ssh command to login to your newly creted instance.  
+The instance URL, and the ssh command should look something like:
+
+name/URL:
+  ec2-xx-xx-xx-xx.compute-1.amazonaws.com
+
+ssh command:
+  ssh -i YOUR_KEY_FILE.pem ubuntu@ec2-xx-xx-xx-xx.compute-1.amazonaws.com
+
+
+And that's it.  If you have any questions about this, please email help@modencode.org.

@@ -1,6 +1,5 @@
 
 # set JAVA_HOME
-# For Mac users, you can set your JAVA_HOME variable to: `/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java_home`
 export JAVA_HOME=your_JAVA_HOME_PATH
 
 # set your AWS credentials 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl 
 
 #
-# written by the following people from modENCODE DCC group:
+# written by the following people:
 # Fei-Yang(Arthur) Jen, arthur20249@gmail.com
 # Quang Trinh, quang.trinh@gmail.com
 #
@@ -27,13 +27,6 @@ checkEnvironments();
 # Parse the config file
 my ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort) = parseOptions($configFile);
 
-# modENCODE AMI is only supported in US EAST region
-if (((length($region) > 0) && ($region !~ /east/)) 
-	|| ((length($availabilityZone) > 0) && ($availabilityZone !~ /east/)))
-{
-	print "\n\nAt the moment, modENCODE AMI is supported only in US East region!  Please change your configuration!\n\n";
-	exit (1);
-}
 	
 # get the default region and availability zone if users didn't put them in config file
 if ((length($region) == 0) || (length($availabilityZone)==0)) 
@@ -42,13 +35,13 @@ if ((length($region) == 0) || (length($availabilityZone)==0))
 }
 
 if ( (length($keyPair) == 0) || (length($securityGroup) == 0) || (length($instanceType) == 0) || (length($instanceName) == 0) || (length($ami) == 0) ) {
-	print "\n\nPlease check your config file and make sure all options are defined!\n\n";
+	print "\n\nPlease check your config file and make sure all configuration attributes are defined!\n\n";
 	exit (1);
 }
 	
-#print out existing options
-printf ("\nLaunching modENCODE instance with the following information as defined in config file '$ARGV[0]':");
-printf ("\n %-15s \t %-30s", "AMI:", $ami);
+#print out attributes defined in config file 
+printf ("\nLaunching your instance with the following attributes as defined in config file '$ARGV[0]':");
+printf ("\n\n %-15s \t %-30s", "AMI:", $ami);
 printf ("\n %-15s \t %-30s", "INSTANCE_NAME:", $instanceName);
 printf ("\n %-15s \t %-30s", "KEY_PAIR:", $keyPair);
 printf ("\n %-15s \t %-30s", "SECURITY_GROUP:", $securityGroup);
@@ -180,15 +173,16 @@ sub createSecurityGroup
 	}
 	else 
 	{
-		print "\nCreating security group '$group' ";
+		print "\nCreating security group '$group' \n";
 		# Create a security group first
-		$cmdOutput = `ec2-create-group $group --region $region -d \"Security group to use with modENCODE AMI ( created by modENCODE_galaxy_create.pl )\"`;
+		my $description = "Security group ( created by $0 )";
+		$cmdOutput = `ec2-create-group $group --region $region -d \" $description \"`;
 		# Proceed to add all the ports
 		my @ports = split (",", $authorizedPort);
 		foreach my $i (@ports) {
 			$i =~ s/^\s+//;
 			$cmdOutput = `ec2-authorize $group -P tcp -p $i`;
-			print "\nAuthorized Port: $i ... created ...";
+			print "\nAuthorized Port: $i ... created ...\n";
 		}
 		print "... done\n";
 	}
@@ -199,6 +193,7 @@ sub labelVolumes
 {
 	my $instanceID = shift;
 	my $instanceName = shift;
+
 	my $readycounter = 0;
 	my $timeoutcounter = 20;
 	my $timeout = 1;
@@ -225,7 +220,7 @@ sub labelVolumes
 
 			#call name volumes function and exit loop 
 			system("bin/name_volumes.pl $instanceID $instanceName");
-			print "\n\nAll modENCODE volumes have been attached ...\n";
+			print "\n\nAll volumes have been attached and labelled ...\n";
 			last;
 		}
 		else
@@ -242,8 +237,8 @@ sub labelVolumes
 	#if in the case that 600s have passed we will timeout and exit -- this should only happen in extreme cases 
 	if($timeout == 1)
 	{
-		print "\n\nOne or more volumes are not attached within the allowed time!\n";
-		print "Please label your Galaxy volumes manually later by running:";
+		print "\n\nOne or more volumes are not attached within the allowed time of 10 mins!\n";
+		print "Please label your volumes manually later by running:";
 		print "\n\n\tbin/name_volumes.pl $instanceID $instanceName";
 		print "\n";
 	}
@@ -292,12 +287,12 @@ sub createInstance
 	#  2>&1 to capture both STDERR and STDOUT
 	$cmdOutput =`$cmd 2>&1`;
 	if (checkRunInstanceError($cmdOutput) == 1) {
-		print "\nError launching Galaxy:";
+		print "\nError launching your Amazon instance :";
 		print "\n\n$cmdOutput";
 		print "\n\n";
 		exit (1);
 	} else {
-		print "\nLaunching instance ... ";
+		print "\nLaunching your instance ... \n";
 	}
 
 	$instanceID = getInstanceID($cmdOutput);
@@ -310,8 +305,9 @@ sub createInstance
 	#label Galaxy volumes
 	labelVolumes($instanceID, $instanceName);
 	
-	print "\n\nTo access modENCODE instance, go to this URL:\n\t" . $URL;
-	print "\n\nTo login to modENCODE instance, use this command:\n\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL ;
+	print "\n\nYour instance name/URL is:\n\t" . $URL;
+	print "\n\nTo login to your instance, use this command:\n\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL ;
+	print "\n\nTo terminate your instance, use this command:\n\tec2-terminate-instances $instanceID ";
 	print "\n\nPlease send questions/comments to help\@modencode.org\n\n";
 }
 
@@ -392,8 +388,8 @@ sub GetURL
 sub usage
 {
 	print "\n";
-	print "This script creates an instance of an AMI on Amazon Cloud. Please send questions/comments to help\@modencode.org.";
-	print "\n\n\tusage: perl " . basename($0) . "  [ CONFIG_FILE ] ";
+	print "This script creates an Amazon instance based on the input configuration file.\nPlease send questions/comments to help\@modencode.org.";
+	print "\n\n\tusage: perl " . $0 . "  [ CONFIG_FILE ] ";
 	print "\n\n\t\tFor example: \t $0 config.txt";
 	print "\n\n";
 	exit (2);
