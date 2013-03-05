@@ -1,29 +1,28 @@
 #
 # 
 #
-KEY_PAIR: YOUR_KEYPAIR_NAME
-SECURITY_GROUP: YOUR_SECURITY_GROUP_NAME
-INSTANCE_NAME: YOUR_INSTANCE_NAME
+#KEY_PAIR: YOUR_KEYPAIR_NAME
+#SECURITY_GROUP: YOUR_SECURITY_GROUP_NAME
+KEY_PAIR: asdfE
+SECURITY_GROUP: asdfE
+INSTANCE_NAME: asdf
 
 #
 # AUTHORIZED_PORTS will be ignored if the security group defined above exists.
 # List all the ports (single or a range) that you would like to enable and separate them with a ","
 #
-<<<<<<< HEAD
 # For example: 
 # AUTHORIZED_PORTS: 22, 45, 80, 13200-14300
 #
 AUTHORIZED_PORTS: 22, 80
-=======
-AUTHORIZED_PORTS: YOUR_AUTHORIZED_PORTS
->>>>>>> 98a21f7c3d3a47c5a74e05f352ce90a994ef367a
 
 #
 # Amazon Machine Image (AMI) ID to be used
 # 
 AMI: ami-c65dcbaf
 
-INSTANCE_TYPE: m1.medium
+#INSTANCE_TYPE: m1.medium
+INSTANCE_TYPE: t1.micro
 REGION: us-east-1
 AVAILABILITY_ZONE: us-east-1a
 

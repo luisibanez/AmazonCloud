@@ -26,7 +26,7 @@ checkEnvironments();
 my $instanceName = parseOptions($configFile);
 	
 #print out existing options
-printf ("\nTerminating modENCODE instance with the following information as defined in config file '$ARGV[0]':");
+printf ("\nTerminating instance with the following information as defined in config file '$ARGV[0]':");
 printf ("\n %-15s \t %-30s", "INSTANCE_NAME:", $instanceName);
 print "\n";
 
@@ -86,9 +86,15 @@ sub getInstanceID {
 		print "\n\tPlease check your config file ... \n\n";
 		exit (2);
 	} else {
-		my @line = split("\t", $cmdOut);
-		$instanceID = $line[2];
-		return $instanceID;
+
+		my @line = split("\n", $cmdOut);
+		foreach my $i (@line) {
+			if ($i =~ /^TAG/ && $i =~ /$instanceName/) {
+				my @target = split("\t", $i);
+				$instanceID = $target[2];
+				return $instanceID;
+			}
+		}
 	}
 }
 

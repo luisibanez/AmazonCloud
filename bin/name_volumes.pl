@@ -12,12 +12,12 @@ my $newtag;
 #function calls===============================
 print "Instance ID: $instanceid\n";
 print "Instance Name: $instanceName\n";
-print "Volumn Prefix : $volumePrefix\n";
 
 get_volumeid();
 
-#function definitions=========================
-#obtain the volume ids from the argument instance id, store them in global variables
+# function definitions
+#=========================
+# obtain the volume ids from the argument instance id, store them in global variables
 sub get_volumeid
 {
 	my $counter = 0;
