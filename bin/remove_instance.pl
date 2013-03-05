@@ -62,7 +62,9 @@ sub parseOptions
 
 }
 
-#function to check if the enviornment has been set, if not run ". env.sh"
+#
+# Function to check if the enviornment has been set, if not run ". env.sh"
+#
 sub checkEnvironments
 {
 	# check to see if AWS_ACCESS_KEY and AWS_SECRET_KEY variables are set 
@@ -72,6 +74,9 @@ sub checkEnvironments
 	}
 }
 
+#
+# Function to get the instnaces' IDs.
+#
 sub getInstanceID {
 
 	my $instanceName = shift;
@@ -85,6 +90,7 @@ sub getInstanceID {
 	my $index;
 	my $ans;
 
+	# Construct ID_table
 	if (length($cmdOut) == 0) {
 		print "\nERROR: ";
 		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instanceName in the config.txt";
@@ -99,12 +105,15 @@ sub getInstanceID {
 				$instanceID = $target[2];
 				$instanceURL = GetURL($instanceID);
 
+				# Check if the instance is still running or terminated
 				if (length($instanceURL) == 0) {
 					$instanceURL = "Terminated";
 				}
 
+				# Concatenate two striing variables and return a newe string representing specific instances 
 				my $instance = $instanceID." ".$instanceURL;
 				$ID_table{$counter} = $instance;
+				
 				$counter++;
 			}
 		}
@@ -114,6 +123,7 @@ sub getInstanceID {
 
 	# Check the size of the ID_table
 	my $hash_size = keys %ID_table;
+
 	# Prompt to let user choose which instance to terminate
 	if ($hash_size == 1) {
 		return $ID_table{0};
@@ -124,32 +134,31 @@ sub getInstanceID {
 		foreach my $key (sort keys %ID_table){
 			print "\n$key).  $ID_table{$key}";
 		}
-		print "\n\nPlease select which instance you would like to terminate (0, 1, 2, ... ): ";
+		print "\n\nPlease select instance that you would like to terminate (0, 1, 2, ... ): ";
 		chomp($index = <STDIN>);
 
 		# Validate user inputs
-		if ($index eq "Q") {
-			print "\nAction has been canceled.";
-			print "\nNo instance is terminated.\n\n";
+		if ($index eq "Q" || $index eq "q") {
+			print "\n\t-  Action has been canceled.";
+			print "\n\t-  No instance is terminated.\n\n";
 			exit (0);
 		} elsif ($index ne "Q" && !looks_like_number($index)) {
-			print "\nInvalid inputs ...\n";
+			print "\n\t-  Invalid inputs ...\n";
 			goto START;
 		} elsif ($index > ($hash_size - 2)) {
-			print "\nSelected instance does not exist.";
+			print "\n\t-  Selected instance does not exist.\n";
 			goto START;
 		}
 
-
 		print "\nTerminating wrong instances could potentially make your life mesirable\.\n";
-		print "Are you sure \"$index: $ID_table{$index}\" is the instance that you want to terminate [Y/n] ? ";
+		print "Are you sure \" $index: $ID_table{$index} \" is the instance that you want to terminate [Y/n] ? ";
 		chomp($ans = <STDIN>);
 	}
 	if ($ans eq "y" || $ans eq "Y") {
 		return $ID_table{$index};
 	} else {
-		print "\nAction has been canceled.";
-		print "\nNo instance is terminated.\n\n";
+		print "\n-  Action has been canceled.";
+		print "\n-  No instance is terminated.\n\n";
 		exit (0);
 	}
 
@@ -157,14 +166,25 @@ sub getInstanceID {
 
 
 sub delete_instnace {
-	my $instanceName = shift;
-	my $instance = getInstanceID($instanceName);
+
+	#
 	my $complete = 0;
 	my $counter = 40;
 	my $cmdOut;
 
-	my @line = split(" ", $instance);
-	my $instanceID = $line[0];
+	# Collect necessary information about the instnace before proceed with deletion
+	my $instanceName = shift;
+	my $instance = getInstanceID($instanceName);
+	my @target = split(" ", $instance);
+	my $instanceID = $target[0];
+	my $instanceStatus = $target[1];
+	
+	if ($instanceStatus eq "Terminated") {
+		print "\nInstance name: $instanceName \($instanceID\) has alread been terminated ... ";
+		print "\nNo action requires!\n\n";
+		exit (0);
+	}
+
 	print "\nDeleting instance: $instanceName \($instanceID\) ... it may take a few secons ... \n\n";
 	# Deleting the instance and collect the output
 	$cmdOut = `ec2-terminate-instances $instanceID`;
@@ -194,7 +214,7 @@ sub delete_instnace {
 		 	}
 
 		}
-		print "\nInstnace: $instanceID has been terminated ... Done ...\n\n";
+		print "\nInstance: $instanceID has been terminated ... Done ...\n\n";
 
 	} else {
 		print "ERROR: Invalid instanceID: $instanceID ... \n\n";
@@ -204,7 +224,7 @@ sub delete_instnace {
 }
 
 #
-#sub function used to output the url used for cloudman and ssh
+# Function used to output the url used for cloudman and ssh
 #
 sub GetURL 
 {
@@ -212,7 +232,6 @@ sub GetURL
 	my @cmdOutput;
 	my $URL;
 	my $complete = 0;
-	my @fields;
 
 	while (!$complete) 
 	{
@@ -233,9 +252,8 @@ sub GetURL
 }
 
 
-
 #
-#function which prints out the proper format of the function when the inputs are given incorrectly
+# Function which prints out the proper format of the function when the inputs are given incorrectly
 #
 sub usage
 {
@@ -246,8 +264,3 @@ sub usage
 	print "\n\n";
 	exit (2);
 }
-
-
-
-
-
