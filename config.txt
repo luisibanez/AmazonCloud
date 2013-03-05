@@ -11,7 +11,7 @@ INSTANCE_NAME: YOUR_INSTANCE_NAME
 # List all the ports (single or a range) that you would like to enable and separate them with a ","
 # Ex: AUTHORIZED_PORTS: 80, 22, 13200-14300, 45
 #
-AUTHORIZED_PORTS: YOUR_PORT_NUMBERS
+AUTHORIZED_PORTS: YOUR_AUTHORIZED_PORTS
 
 #
 # Amazon Machine Image (AMI) ID to be used
