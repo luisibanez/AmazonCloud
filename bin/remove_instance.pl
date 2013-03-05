@@ -2,6 +2,7 @@
 
 use warnings;
 use strict;
+use Scalar::Util qw(looks_like_number);
 
 #
 # written by the following people from modENCODE DCC group:
@@ -32,7 +33,6 @@ print "\n";
 
 # Delete the instnace
 delete_instnace($instanceName);
-
 
 #function declarations
 #=================================================================
@@ -78,7 +78,12 @@ sub getInstanceID {
 
 	# Find the instacne that we want to delete and collect the output
 	my $cmdOut = `ec2-describe-instances | grep "$instanceName"`;
-	my $instanceID = "";
+	my %ID_table;
+	my $counter = 0;
+	my $instanceID;
+	my $instanceURL;
+	my $index;
+	my $ans;
 
 	if (length($cmdOut) == 0) {
 		print "\nERROR: ";
@@ -92,20 +97,74 @@ sub getInstanceID {
 			if ($i =~ /^TAG/ && $i =~ /$instanceName/) {
 				my @target = split("\t", $i);
 				$instanceID = $target[2];
-				return $instanceID;
+				$instanceURL = GetURL($instanceID);
+
+				if (length($instanceURL) == 0) {
+					$instanceURL = "Terminated";
+				}
+
+				my $instance = $instanceID." ".$instanceURL;
+				$ID_table{$counter} = $instance;
+				$counter++;
 			}
 		}
+		# Add exit option
+		$ID_table{"Q"} = "Exit";
 	}
+
+	# Check the size of the ID_table
+	my $hash_size = keys %ID_table;
+	# Prompt to let user choose which instance to terminate
+	if ($hash_size == 1) {
+		return $ID_table{0};
+	} else {
+		print "\n\nThere are more than one instances with the same INSTANE_NAME: $instanceName\.";
+		START:
+		print "\nPlease choose which one to terminate:\n";
+		foreach my $key (sort keys %ID_table){
+			print "\n$key).  $ID_table{$key}";
+		}
+		print "\n\nPlease select which instance you would like to terminate (0, 1, 2, ... ): ";
+		chomp($index = <STDIN>);
+
+		# Validate user inputs
+		if ($index eq "Q") {
+			print "\nAction has been canceled.";
+			print "\nNo instance is terminated.\n\n";
+			exit (0);
+		} elsif ($index ne "Q" && !looks_like_number($index)) {
+			print "\nInvalid inputs ...\n";
+			goto START;
+		} elsif ($index > ($hash_size - 2)) {
+			print "\nSelected instance does not exist.";
+			goto START;
+		}
+
+
+		print "\nTerminating wrong instances could potentially make your life mesirable\.\n";
+		print "Are you sure \"$index: $ID_table{$index}\" is the instance that you want to terminate [Y/n] ? ";
+		chomp($ans = <STDIN>);
+	}
+	if ($ans eq "y" || $ans eq "Y") {
+		return $ID_table{$index};
+	} else {
+		print "\nAction has been canceled.";
+		print "\nNo instance is terminated.\n\n";
+		exit (0);
+	}
+
 }
 
 
 sub delete_instnace {
 	my $instanceName = shift;
-	my $instanceID = getInstanceID($instanceName);
+	my $instance = getInstanceID($instanceName);
 	my $complete = 0;
 	my $counter = 40;
 	my $cmdOut;
 
+	my @line = split(" ", $instance);
+	my $instanceID = $line[0];
 	print "\nDeleting instance: $instanceName \($instanceID\) ... it may take a few secons ... \n\n";
 	# Deleting the instance and collect the output
 	$cmdOut = `ec2-terminate-instances $instanceID`;
@@ -117,7 +176,7 @@ sub delete_instnace {
 			sleep 3;
 			# Deleting the instance and collect the output
 			$cmdOut = `ec2-terminate-instances $instanceID`;
-			my @line = split("\t", $cmdOut);
+			my @line = split(" ", $cmdOut);
 			my $previous_status = $line[2];
 			chomp($previous_status);
 			my $current_status = $line[3];
@@ -143,6 +202,37 @@ sub delete_instnace {
 	}
 
 }
+
+#
+#sub function used to output the url used for cloudman and ssh
+#
+sub GetURL 
+{
+	my $instanceID = shift;
+	my @cmdOutput;
+	my $URL;
+	my $complete = 0;
+	my @fields;
+
+	while (!$complete) 
+	{
+	
+		@cmdOutput = `ec2-describe-instances $instanceID`;
+		foreach my $line (@cmdOutput)
+		{
+			if (($line =~ /^INSTANCE/) && ($line =~ /running/)) {
+				my @f = split("\t",$line);
+				$URL = $f[3];
+				$complete = 1;
+			} elsif (($line =~ /^INSTANCE/) && ($line =~/terminated/)) {
+				$complete = 1;
+			}
+		}
+	}
+	return $URL;
+}
+
+
 
 #
 #function which prints out the proper format of the function when the inputs are given incorrectly
