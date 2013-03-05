@@ -121,7 +121,7 @@ sub delete_instnace {
 		 		$complete = 1;
 		 	} elsif ($counter == 0) {
 		 		# After 120s (2 mins) has passed, we will automatially bounce the execution due to excessive time spent on waiting for response.
-		 		print "\nUnable to delete instance: $instanceID. Please connect Amazon or terminate your instance through Amazon's web ineterface\n\n";
+		 		print "\nUnable to delete instance: $instanceID. Please contact Amazon or terminate your instance through Amazon's web ineterface\n\n";
 		 		exit (2);
 		 	}
 		 	else {
@@ -138,8 +138,9 @@ sub delete_instnace {
 
 }
 
-
+#
 #function which prints out the proper format of the function when the inputs are given incorrectly
+#
 sub usage
 {
 	print "\n";

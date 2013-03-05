@@ -34,10 +34,30 @@ if ((length($region) == 0) || (length($availabilityZone)==0))
 	($region, $availabilityZone) = getRegionAndAvailableZone();
 }
 
+<<<<<<< HEAD
 if ( (length($keyPair) == 0) || (length($securityGroup) == 0) || (length($instanceType) == 0) || (length($instanceName) == 0) || (length($ami) == 0) ) {
 	print "\n\nPlease check your config file and make sure all configuration attributes are defined!\n\n";
+=======
+# Make sure all the paramenters have been specified in the config file before processing
+if (length($keyPair) == 0) {
+	print "\nNo KEY_PAIR value specified. Please check your config file!\n\n";
+	exit (1);
+} elsif (length($securityGroup) == 0) {
+	print "\nNo SECURITY_GROUP value specified. Please check your config file!\n\n";
+	exit (1);
+} elsif (length($instanceType) == 0) {
+	print "\nNo INSTANCE_TYPE value specified. Please check your config file!\n\n";
+	exit (1);
+} elsif (length($instanceName) == 0) {
+	print "\nNo INSTANCE_NAME value specified. Please check your config file!\n\n";
+	exit (1);
+} elsif (length($ami) == 0) {
+	print "\nNo AMI value specified. Please check your config file!\n\n";
+>>>>>>> 98a21f7c3d3a47c5a74e05f352ce90a994ef367a
 	exit (1);
 }
+
+
 	
 #print out attributes defined in config file 
 printf ("\nLaunching your instance with the following attributes as defined in config file '$ARGV[0]':");
@@ -51,9 +71,9 @@ printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
 printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
 print "\n";
 
-createKeypair($keyPair,$region);
+#createKeypair($keyPair,$region);
 createSecurityGroup($securityGroup, $region, $authorizedPort);
-createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
+#createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
 
 
 
@@ -173,10 +193,22 @@ sub createSecurityGroup
 	}
 	else 
 	{
+<<<<<<< HEAD
 		print "\nCreating security group '$group' \n";
 		# Create a security group first
 		my $description = "Security group ( created by $0 )";
 		$cmdOutput = `ec2-create-group $group --region $region -d \" $description \"`;
+=======
+		# Check if there has any value been specified in the config file for AUTHORIZED_PORTS
+		if (length($authorizedPort) == 0) {
+			print "\n\nCreating security group '$group', but no port is assigned to AUTHORIZED_PORTS!\n";
+			print "Please check your config file to make sure all the paramenters have been specified!\n\n";
+			exit (1);
+		}
+		print "\nCreating security group '$group' ";
+		# Create a security group first
+		$cmdOutput = `ec2-create-group $group --region $region -d \"Security group to use with modENCODE AMI ( created by bin/create_instnace.pl )\"`;
+>>>>>>> 98a21f7c3d3a47c5a74e05f352ce90a994ef367a
 		# Proceed to add all the ports
 		my @ports = split (",", $authorizedPort);
 		foreach my $i (@ports) {

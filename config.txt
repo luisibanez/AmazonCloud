@@ -9,10 +9,14 @@ INSTANCE_NAME: YOUR_INSTANCE_NAME
 # AUTHORIZED_PORTS will be ignored if the security group defined above exists.
 # List all the ports (single or a range) that you would like to enable and separate them with a ","
 #
+<<<<<<< HEAD
 # For example: 
 # AUTHORIZED_PORTS: 22, 45, 80, 13200-14300
 #
 AUTHORIZED_PORTS: 22, 80
+=======
+AUTHORIZED_PORTS: YOUR_AUTHORIZED_PORTS
+>>>>>>> 98a21f7c3d3a47c5a74e05f352ce90a994ef367a
 
 #
 # Amazon Machine Image (AMI) ID to be used
