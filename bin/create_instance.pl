@@ -212,7 +212,7 @@ sub createSecurityGroup
 			$cmdOutput = `ec2-authorize $group -P tcp -p $i`;
 			print "\nAuthorized Port: $i ... created ...\n";
 		}
-		print "Done ...\n";
+		print "\nAuthorized port Done ...\n";
 	}
 }
 
