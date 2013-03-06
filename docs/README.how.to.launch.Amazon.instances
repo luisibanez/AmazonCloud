@@ -1,6 +1,6 @@
-
 This file describes how to use scripts in this GitHub repository to launch instances on Amazon Cloud.
-If you have any questions about this, please email help@modencode.org.
+If you have any questions about this, please email either Fei-Yang (Arthur) Jen at arthur20249@gmail.com or Quang 
+Trinh at quang.trinh@gmail.com.
 
 
 Step 1.  Create your Amazon EC2 account if you don't already have one.  Go to http://aws.amazon.com, click 
@@ -75,4 +75,5 @@ ssh command:
   ssh -i YOUR_KEY_FILE.pem ubuntu@ec2-xx-xx-xx-xx.compute-1.amazonaws.com
 
 
-And that's it.  If you have any questions about this, please email help@modencode.org.
+And that's it.  If you have any questions about this, please email either Fei-Yang (Arthur) Jen at arthur20249@gmail.com or Quang 
+Trinh at quang.trinh@gmail.com.
