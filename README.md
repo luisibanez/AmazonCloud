@@ -1,9 +1,9 @@
 AmazonCloud
 ===========
 
-This GitHub repository contains a quick reference for getting started with Amazon Cloud.  
+This GitHub repository contains a quick reference for getting started with Amazon Cloud.  Most of the scripts in 
+this GitHub are written by Fei-Yang (Arthur) Jen ( supervisor Quang M. trinh ).
 
-Contributed by: Fei-Yang Jen and Quang Trinh
 
 Documentations
 ==============
@@ -11,4 +11,4 @@ Documentations
 
 Quick Guide on Getting Started with Amazon Cloud
 ================================================
-
+TBD
