@@ -8,6 +8,7 @@ this GitHub are written by Fei-Yang (Arthur) Jen (<arthur20249@gmail.com>), supe
 Documentations
 ==============
 
+how to launch Amazon instances - see https://github.com/qtrinh/AmazonCloud/blob/master/docs/README.how.to.launch.Amazon.instances
 
 Quick Guide on Getting Started with Amazon Cloud
 ================================================
