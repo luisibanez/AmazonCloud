@@ -19,6 +19,11 @@ AUTHORIZED_PORTS: 22, 80
 # 
 AMI: ami-c65dcbaf
 
+# 
+# number of instances to launch
+#
+NUMBER_OF_INSTANCES: 1
+
 INSTANCE_TYPE: m1.medium
 REGION: us-east-1
 AVAILABILITY_ZONE: us-east-1a

@@ -9,6 +9,7 @@
 use strict;
 use warnings;
 use File::Basename;
+use Parallel::ForkManager;
 
 
 #function calls
@@ -25,7 +26,7 @@ my $configFile = $ARGV[0];
 checkEnvironments();
 
 # Parse the config file
-my ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort) = parseOptions($configFile);
+my ($ami, $numberOfInstances, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort) = parseOptions($configFile);
 
 	
 # get the default region and availability zone if users didn't put them in config file
@@ -35,7 +36,7 @@ if ((length($region) == 0) || (length($availabilityZone)==0))
 }
 
 
-if ( (length($keyPair) == 0) || (length($securityGroup) == 0) || (length($instanceType) == 0) || (length($instanceName) == 0) || (length($ami) == 0) ) {
+if ( (length($keyPair) == 0) || (length($securityGroup) == 0) || (length($instanceType) == 0) || (length($instanceName) == 0) || (length($ami) == 0) || (length($numberOfInstances)== 0)) {
 	print "\n\nPlease check your config file and make sure all configuration attributes are defined!\n\n";
 }
 
@@ -70,10 +71,31 @@ printf ("\n %-15s \t %-30s", "REGION:", $region);
 printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
 printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
 print "\n";
+	
 
 createKeypair($keyPair,$region);
 createSecurityGroup($securityGroup, $region, $authorizedPort);
-createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone);
+
+my $multiInstances = 0;
+my $multiInstancesOutput = "";
+	
+if ($numberOfInstances > 1) {
+	$multiInstances = 1;
+}
+
+my $manager = Parallel::ForkManager->new($numberOfInstances);
+for (my $counter = 1; $counter <= $numberOfInstances; $counter++) {
+	$manager->start and next;
+	if ($numberOfInstances > 1) {
+		$instanceName = $instanceName . "_" . $counter;
+	}
+	my $str = createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone, $multiInstances );
+	if (length($str) > 0) {
+		print $str;
+	}
+	$manager->finish;
+}
+$manager->wait_all_children;
 
 
 
@@ -99,6 +121,11 @@ sub parseOptions
 		{
 			$ami = $line[1];
 			chomp($ami);
+		}
+		if($i =~ /^NUMBER_OF_INSTANCES:/)
+		{
+			$numberOfInstances = $line[1];
+			chomp($numberOfInstances);
 		}
 		elsif($i =~ /^KEY_PAIR:/)
 		{
@@ -137,7 +164,7 @@ sub parseOptions
 		}
 	}
 	close FILE;
-	return ($ami, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort);
+	return ($ami, $numberOfInstances, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort);
 
 }
 
@@ -221,6 +248,7 @@ sub labelVolumes
 {
 	my $instanceID = shift;
 	my $instanceName = shift;
+	my $multiInstances = shift;
 
 	my $readycounter = 0;
 	my $timeoutcounter = 20;
@@ -247,8 +275,14 @@ sub labelVolumes
 			$timeout = 0;
 
 			#call name volumes function and exit loop 
-			system("bin/name_volumes.pl $instanceID $instanceName");
-			print "\n\nAll volumes have been attached and labelled ...\n";
+			if ($multiInstances == 0) {
+				# call name_volumes.pl with 1 ( i.e., show outputs )
+				system("bin/name_volumes.pl $instanceID $instanceName 1");
+				print "\n\nAll volumes have been attached and labelled ...\n";
+			} else {
+				# call name_volumes.pl with 0 ( i.e., don't show outputs )
+				system("bin/name_volumes.pl $instanceID $instanceName 0");
+			}
 			last;
 		}
 		else
@@ -265,10 +299,12 @@ sub labelVolumes
 	#if in the case that 600s have passed we will timeout and exit -- this should only happen in extreme cases 
 	if($timeout == 1)
 	{
-		print "\n\nOne or more volumes are not attached within the allowed time of 10 mins!\n";
-		print "Please label your volumes manually later by running:";
-		print "\n\n\tbin/name_volumes.pl $instanceID $instanceName";
-		print "\n";
+		if ($multiInstances == 0) {
+			print "\n\nOne or more volumes are not attached within the allowed time of 10 mins!\n";
+			print "Please label your volumes manually later by running:";
+			print "\n\n\tbin/name_volumes.pl $instanceID $instanceName";
+			print "\n";
+		}
 	}
 }
 
@@ -305,9 +341,12 @@ sub createInstance
 	my $instanceName = shift;
 	my $region = shift;
 	my $availabilityZone = shift;
+	my $multiInstances = shift;
+
 	my $instanceID;
 	my $cmd ;
 	my $cmdOutput;
+	my $returnStr = "";
 
 
 	$cmd ="ec2-run-instances $ami -k $keyPair -g $securityGroup -t $instanceType --region $region --availability-zone $availabilityZone ";	
@@ -320,7 +359,10 @@ sub createInstance
 		print "\n\n";
 		exit (1);
 	} else {
-		print "\nLaunching your instance ... \n";
+		# print only if launching a single instance 
+		if ($multiInstances == 0) {
+			print "\nLaunching your instance $instanceName ... \n";
+		}
 	}
 
 	$instanceID = getInstanceID($cmdOutput);
@@ -331,12 +373,22 @@ sub createInstance
 	my $URL = GetURL($instanceID);
 
 	#label Galaxy volumes
-	labelVolumes($instanceID, $instanceName);
+	labelVolumes($instanceID, $instanceName, $multiInstances);
 	
-	print "\n\nYour instance name/URL is:\n\t" . $URL;
-	print "\n\nTo login to your instance, use this command:\n\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL ;
-	print "\n\nTo terminate your instance, use this command:\n\tec2-terminate-instances $instanceID ";
-	print "\n\nPlease send questions/comments to help\@modencode.org\n\n";
+	# print only if lauching a single instance 
+	if ($multiInstances == 0) {
+		print "\n\nYour instance name/URL is:\n\t" . $URL;
+		print "\n\nTo login to your instance, use this command:\n\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL ;
+		print "\n\nTo terminate your instance, use this command:\n\tec2-terminate-instances $instanceID ";
+		print "\n\nPlease send questions/comments to help\@modencode.org\n\n";
+	} else {
+		$returnStr = "\n\n$instanceName\tHOST_NAME\t" . $URL;
+		$returnStr = $returnStr . "\n$instanceName\tSSH_CMD\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL;
+		$returnStr = $returnStr . "\n$instanceName\tTERMINATE_CMD\tec2-terminate-instances $instanceID ";
+		$returnStr = $returnStr . "\n";
+
+	}
+	return $returnStr;
 }
 
 # check for error after running an instance 
@@ -417,8 +469,8 @@ sub usage
 {
 	print "\n";
 	print "This script creates an Amazon instance based on the input configuration file.\nPlease send questions/comments to help\@modencode.org.";
-	print "\n\n\tusage: perl " . $0 . "  [ CONFIG_FILE ] ";
-	print "\n\n\t\tFor example: \t $0 config.txt";
+	print "\n\n\tusage: perl " . basename($0) . "  [ CONFIG_FILE ] ";
+	print "\n\n\t\tFor example:\tperl " . basename($0) . " config.txt";
 	print "\n\n";
 	exit (2);
 }

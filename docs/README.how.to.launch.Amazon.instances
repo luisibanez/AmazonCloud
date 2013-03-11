@@ -45,7 +45,10 @@ These attributes are used in Step 5 to launch your Amazon instance.
    Ports to be enabled in your security group to allow access to your Amazon instance.
 
  AMI: YOUR_AMI_ID
-   AMI of instance to use. 
+   AMI to use to create an instance. 
+
+ NUMBER_OF_INSTANCES: 1
+   Number of instances to create.  
 
  INSTANCE_TYPE: m1.medium
     Amazon instance type.  Default value is 'm1.medium'. 

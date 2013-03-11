@@ -3,6 +3,7 @@
 #global variables===============================
 my $instanceid = $ARGV[0]; 
 my $instanceName = $ARGV[1];
+my $verbose = $ARGV[2];
 
 my $volid;
 my $voltag;
@@ -10,16 +11,20 @@ my $clustername;
 my $newtag;
 
 #function calls===============================
-print "Instance ID: $instanceid\n";
-print "Instance Name: $instanceName\n";
+if ($verbose == 1) {
+	print "Instance ID: $instanceid\n";
+	print "Instance Name: $instanceName\n";
+}
 
-get_volumeid();
+get_volumeid($verbose);
 
 # function definitions
 #=========================
 # obtain the volume ids from the argument instance id, store them in global variables
 sub get_volumeid
 {
+	my $verbose = shift;
+
 	my $counter = 0;
 	#create array for output
 	my @ec2cmd = `ec2-describe-instances $instanceid`;
@@ -34,7 +39,9 @@ sub get_volumeid
 			$volid = @line[2];
 			$voltag = @line[1];
 			$newtag = "${instanceid}_${instanceName}_${counter}";
-			print "volumeid: $volid adding tag: ${newtag}\n";
+			if ($verbose == 1) {
+				print "volumeid: $volid adding tag: ${newtag}\n";
+			}
 			my $addtagcmd = `ec2-create-tags $volid --tag Name=$newtag`;
 			$counter++;
 		}

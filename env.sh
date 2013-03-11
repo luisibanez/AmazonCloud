@@ -14,3 +14,5 @@ export AWS_SECRET_KEY=your_AWS_SECRET_KEY
 export EC2_HOME=`pwd`/external_tools/ec2-api-tools-1.6.1.4
 export PATH=$PATH:$EC2_HOME/bin
 
+# add ./bin to path
+export PATH=$PATH:`pwd`/bin
