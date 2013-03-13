@@ -77,57 +77,6 @@ sub parseOption {
 }
 
 
-sub GetURL {
-	
-	my $instanceID = shift;
-	my $instanceName = shift;
-	my $URL = "";
-
-	my $cmd = `ec2-describe-instances $instanceID | grep INSTANCE`;
-
-	if (($cmd =~ /^INSTANCE/) && ($cmd =~ /running/)) {
-		my @instance_info = split("\t", $cmd);
-		$URL = $instance_info[3];
-	} else {
-		print "\nWARNING:";
-		print "\n\tCurrent instance: $instanceName \($instanceID\) is either terminated or shutting-down.";
-		print "\n\tSkipping this instance for SGE installation ... Continue ...\n\n";
-	}
-	return $URL;
-}
-
-
-sub create_URL_to_Name_hash {
-	
-	my $instanceName = shift;
-	my %id_instanceURL_table;
-	my $instanceID;
-	my $instanceURL;
-
-	my $cmd = `ec2-describe-instances | grep "$instanceName" | grep TAG`;
-	if (length($cmd) == 0) {
-		print "\nERROR: ";
-		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instanceName in the config.txt";
-		print "\n\tPlease check your config file make sure there are instances running before configuring SGE Cluster... \n\n";
-		exit (2);
-	}
-
-	my @num_Instances = split("\n", $cmd);
-	foreach my $i (@num_Instances) {
-		my @current_instance = split("\t", $i);
-		$instanceID = $current_instance[2];
-		$instanceName = $current_instance[4];
-		$instanceURL = GetURL($instanceID, $instanceName);
-		if ($instanceURL ne "") {
-			$id_instanceURL_table{$instanceURL} = $instanceName;
-		}
-	}
-
-	return %id_instanceURL_table;
-
-}
-
-
 sub GetCPU {
 	
 	my $instanceType = shift;
@@ -165,24 +114,62 @@ sub GetCPU {
 }
 
 
-sub GetInternalHostName {
+sub GetURL {
 	
-	my $array = shift;
-	my @instanceURLs = @$array;
-	
-	my @internalHostName;
-	my @line;
-	my $intHostname;
-	my $cmd;
+	my $instanceID = shift; 
+	my $instanceName = shift; # For Error checking.
+	my $URL = "";
+	my $intHostname = "";
 
-	foreach my $i (@instanceURLs) {
-		$cmd = `ec2-describe-instances | grep $i`;
-		@line = split("\t", $cmd);
-		$intHostname = $line[4];
-		push(@internalHostName, $intHostname);
+	my $cmd = `ec2-describe-instances $instanceID | grep INSTANCE`;
+
+	if (($cmd =~ /^INSTANCE/) && ($cmd =~ /running/)) {
+		my @instance_info = split("\t", $cmd);
+		$URL = $instance_info[3];
+		$intHostname = $instance_info[4];
+	} else {
+		print "\nWARNING:";
+		print "\n\tCurrent instance: $instanceName \($instanceID\) is either terminated or shutting-down.";
+		print "\n\tSkipping this instance for SGE installation ... Continue ...\n\n";
+	}
+	return ($URL, $intHostname);
+}
+
+
+
+sub InstanceInfo_hash {
+	
+	my $instanceName = shift;
+	my %URL_intHost_table;
+	
+	my %intHost_ID_table;
+	my $instanceID;
+	
+	my $instanceURL;
+	my $intHostname;
+
+	my $cmd = `ec2-describe-instances | grep "$instanceName" | grep TAG`;
+	if (length($cmd) == 0) {
+		print "\nWARNING: ";
+		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instanceName in the config.txt";
+		print "\n\tPlease check your config file make sure there are instances running before configuring SGE Cluster... \n\n";
+		exit (1);
 	}
 
-	return @internalHostName;
+	my @num_Instances = split("\n", $cmd);
+	foreach my $i (@num_Instances) {
+		my @current_instance = split("\t", $i);
+		$instanceID = $current_instance[2];
+		$instanceName = $current_instance[4];
+		($instanceURL, $intHostname) = GetURL($instanceID, $instanceName);
+		if ($instanceURL ne "") {
+			$URL_intHost_table{$instanceURL} = $intHostname;
+			$intHost_ID_table{$intHostname} = $instanceID;
+		}
+
+	}
+
+	return (\%URL_intHost_table, \%intHost_ID_table);
 
 }
 
@@ -195,30 +182,38 @@ sub Install_SGE {
 	my $instanceType = shift;
 
 	# Public hostname: use to ssh to each instance and install SGE
-	my %URL_Name_hash = create_URL_to_Name_hash($instanceName); 
-	
 	# Internal hostname: use for SGE configuration.
-	my @listOfInstance = keys %URL_Name_hash;
-	my @AllNodes = GetInternalHostName(\@listOfInstance);
+	my ($URL_intHost_hash_ref, $intHost_ID_hash_ref) = create_URL_to_ID_hash($instanceName);
+	my %URL_intHost_hash = %$URL_intHost_hash_ref;
+	my %intHost_ID_hash = %$intHost_ID_hash_ref;
+	
+	my @listOfURL= keys %URL_intHost_hash; # Use for SSH.
+	my @llistOfintHost = values %URL_intHost_hash;
 
-=head	
-	foreach my $i (@listOfInstance) {
+	my @t1 = keys %intHost_ID_hash;
+	
+	foreach my $i (@listOfURL) {
 		print "$i\t";
 	}
 	print "\n";
 
-	foreach my $i (@AllNodes) {
+	foreach my $i (@llistOfintHost) {
 		print "$i\t";
 	}
 	print "\n";
-=cut
+
+	foreach my $i (@t1) {
+		print "$i\t";
+	}
+	print "\n";
+
 
 	# Other varaiables
 	my $separator = 0;
 	my $numCores = GetCPU($instanceType);
 	my $current_instance_URL;
 
-	foreach my $k (keys %URL_Name_hash) {
+	foreach my $k (keys %URL_intHost_hash) {
 		if ($separator == 0) {
 			# This is Master
 			$current_instance_URL = $k;
