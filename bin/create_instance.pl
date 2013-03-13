@@ -158,7 +158,7 @@ sub parseOptions
 			$instanceName = $line[1];
 			chomp($instanceName);
 			# replace spaces with '_'
-			$instancename =~ s/\ /_/g'
+			$instanceName =~ s/\ /_/g;
 		} 
 		elsif($i =~ /^AUTHORIZED_PORTS:/)
 		{
