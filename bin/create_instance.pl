@@ -156,6 +156,8 @@ sub parseOptions
 		{
 			$instanceName = $line[1];
 			chomp($instanceName);
+			# replace spaces with '_'
+			$instancename =~ s/\ /_/g'
 		} 
 		elsif($i =~ /^AUTHORIZED_PORTS:/)
 		{
@@ -302,7 +304,7 @@ sub labelVolumes
 		if ($multiInstances == 0) {
 			print "\n\nOne or more volumes are not attached within the allowed time of 10 mins!\n";
 			print "Please label your volumes manually later by running:";
-			print "\n\n\tbin/name_volumes.pl $instanceID $instanceName";
+			print "\n\n\tbin/name_volumes.pl $instanceID $instanceName 1";
 			print "\n";
 		}
 	}
@@ -349,7 +351,15 @@ sub createInstance
 	my $returnStr = "";
 
 
-	$cmd ="ec2-run-instances $ami -k $keyPair -g $securityGroup -t $instanceType --region $region --availability-zone $availabilityZone ";	
+	# add ephemeral devices - see http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
+	# http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html
+	if ($instanceType =~ /m1\.medium/) {
+		$cmd ="ec2-run-instances $ami -k $keyPair -g $securityGroup -t $instanceType -b \"/dev/sdb1=ephemeral0\" --region $region --availability-zone $availabilityZone ";	
+	} elsif ($instanceType =~ /m1\.large/) {
+		$cmd ="ec2-run-instances $ami -k $keyPair -g $securityGroup -t $instanceType -b \"/dev/sdb1=ephemeral0\" -b \"/dev/sdb2=ephemeral1\" --region $region --availability-zone $availabilityZone ";	
+	} else {
+		$cmd ="ec2-run-instances $ami -k $keyPair -g $securityGroup -t $instanceType --region $region --availability-zone $availabilityZone ";	
+	}
 
 	#  2>&1 to capture both STDERR and STDOUT
 	$cmdOutput =`$cmd 2>&1`;
@@ -368,7 +378,7 @@ sub createInstance
 	$instanceID = getInstanceID($cmdOutput);
 
 	# label the instance 
-	$cmdOutput = `ec2-create-tags $instanceID  -t Name=$instanceName`;
+	$cmdOutput = `ec2-create-tags $instanceID  -t Name=\"$instanceName\"`;
 	
 	my $URL = GetURL($instanceID);
 
