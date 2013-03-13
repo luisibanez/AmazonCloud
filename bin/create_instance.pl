@@ -89,6 +89,7 @@ for (my $counter = 1; $counter <= $numberOfInstances; $counter++) {
 	if ($numberOfInstances > 1) {
 		$instanceName = $instanceName . "_" . $counter;
 	}
+	printf ("\nCreating Instance: $instanceName ...\n");
 	my $str = createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone, $multiInstances );
 	if (length($str) > 0) {
 		print $str;
@@ -392,11 +393,10 @@ sub createInstance
 		print "\n\nTo terminate your instance, use this command:\n\tec2-terminate-instances $instanceID ";
 		print "\n\nPlease send questions/comments to help\@modencode.org\n\n";
 	} else {
-		$returnStr = "\n\n$instanceName\tHOST_NAME\t" . $URL;
-		$returnStr = $returnStr . "\n$instanceName\tSSH_CMD\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL;
-		$returnStr = $returnStr . "\n$instanceName\tTERMINATE_CMD\tec2-terminate-instances $instanceID ";
+		$returnStr = "\n$instanceName\tHOST_NAME:\t" . $URL;
+		$returnStr = $returnStr . "\n$instanceName\tSSH_CMD:\t\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL;
+		$returnStr = $returnStr . "\n$instanceName\tTERMINATE_CMD:\tec2-terminate-instances $instanceID ";
 		$returnStr = $returnStr . "\n";
-
 	}
 	return $returnStr;
 }
