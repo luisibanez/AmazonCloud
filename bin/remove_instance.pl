@@ -84,7 +84,7 @@ sub getInstanceID {
 	# Find the instacne that we want to delete and collect the output
 	my $cmdOut = `ec2-describe-instances | grep "$instanceName"`;
 	my %ID_table;
-	my $counter = 0;
+	my $counter = 1;
 	my $instanceID;
 	my $instanceURL;
 	my $index;
