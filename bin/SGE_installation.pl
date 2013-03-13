@@ -2,7 +2,8 @@
 
 use warnings;
 use strict;
-
+use Data::Dumper;
+use feature 'say';
 
 
 
@@ -120,6 +121,7 @@ sub GetURL {
 	my $instanceName = shift; # For Error checking.
 	my $URL = "";
 	my $intHostname = "";
+	my $IP;
 
 	my $cmd = `ec2-describe-instances $instanceID | grep INSTANCE`;
 
@@ -127,31 +129,35 @@ sub GetURL {
 		my @instance_info = split("\t", $cmd);
 		$URL = $instance_info[3];
 		$intHostname = $instance_info[4];
+		$IP = $instance_info[17];
 	} else {
 		print "\nWARNING:";
 		print "\n\tCurrent instance: $instanceName \($instanceID\) is either terminated or shutting-down.";
 		print "\n\tSkipping this instance for SGE installation ... Continue ...\n\n";
 	}
-	return ($URL, $intHostname);
+	return ($URL, $intHostname, $IP);
 }
 
 
 
-sub InstanceInfo_hash {
+sub Get_Instance_Info_Hash {
 	
-	my $instanceName = shift;
-	my %URL_intHost_table;
-	
-	my %intHost_ID_table;
-	my $instanceID;
-	
-	my $instanceURL;
-	my $intHostname;
+	my $instancePrefix = shift;
+	my $counter = 0;
+	my %Info_hash;
 
-	my $cmd = `ec2-describe-instances | grep "$instanceName" | grep TAG`;
+	# Instance's infomation
+	my $instanceName;
+	my $instanceID;
+	my $instanceURL;
+	my $instanceRole;
+	my $intHostname;
+	my $intIP;
+
+	my $cmd = `ec2-describe-instances | grep "$instancePrefix" | grep TAG`;
 	if (length($cmd) == 0) {
 		print "\nWARNING: ";
-		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instanceName in the config.txt";
+		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instancePrefix in the config.txt";
 		print "\n\tPlease check your config file make sure there are instances running before configuring SGE Cluster... \n\n";
 		exit (1);
 	}
@@ -159,17 +165,36 @@ sub InstanceInfo_hash {
 	my @num_Instances = split("\n", $cmd);
 	foreach my $i (@num_Instances) {
 		my @current_instance = split("\t", $i);
+		
+		# Configure instance ID
 		$instanceID = $current_instance[2];
-		$instanceName = $current_instance[4];
-		($instanceURL, $intHostname) = GetURL($instanceID, $instanceName);
+
+		# Configure instance URL and internal hostname
+		($instanceURL, $intHostname, $intIP) = GetURL($instanceID, $instanceName);
+		
 		if ($instanceURL ne "") {
-			$URL_intHost_table{$instanceURL} = $intHostname;
-			$intHost_ID_table{$intHostname} = $instanceID;
+			
+			# Configure instance name and role. 
+			if ($counter == 0) {
+				$instanceRole = "master";
+				$instanceName = $instancePrefix."_".$instanceRole;
+				$counter++;
+			} else {
+				$instanceRole = "compute";
+				$instanceName = $instancePrefix."_".$instanceRole."_".$counter;
+				$counter++;
+			}
+			$Info_hash{$instanceURL}{"Internal_HostName"} = $intHostname;
+			$Info_hash{$instanceURL}{"Internal_IP"} = $intIP;
+			$Info_hash{$instanceURL}{"Name"} = $instanceName;
+			$Info_hash{$instanceURL}{"ID"} = $instanceID;
+			$Info_hash{$instanceURL}{"Role"} = $instanceRole;
 		}
+		
 
 	}
 
-	return (\%URL_intHost_table, \%intHost_ID_table);
+	return %Info_hash;
 
 }
 
@@ -178,41 +203,17 @@ sub InstanceInfo_hash {
 sub Install_SGE {
 	
 	# Arguments
-	my $instanceName = shift;
+	my $instancePrefix = shift;
 	my $instanceType = shift;
 
-	# Public hostname: use to ssh to each instance and install SGE
-	# Internal hostname: use for SGE configuration.
-	my ($URL_intHost_hash_ref, $intHost_ID_hash_ref) = create_URL_to_ID_hash($instanceName);
-	my %URL_intHost_hash = %$URL_intHost_hash_ref;
-	my %intHost_ID_hash = %$intHost_ID_hash_ref;
-	
-	my @listOfURL= keys %URL_intHost_hash; # Use for SSH.
-	my @llistOfintHost = values %URL_intHost_hash;
+	my %instance_info = Get_Instance_Info_Hash($instancePrefix);
 
-	my @t1 = keys %intHost_ID_hash;
-	
-	foreach my $i (@listOfURL) {
-		print "$i\t";
-	}
-	print "\n";
-
-	foreach my $i (@llistOfintHost) {
-		print "$i\t";
-	}
-	print "\n";
-
-	foreach my $i (@t1) {
-		print "$i\t";
-	}
-	print "\n";
-
-
+	print Dumper(\%instance_info);
 	# Other varaiables
 	my $separator = 0;
 	my $numCores = GetCPU($instanceType);
 	my $current_instance_URL;
-
+=head
 	foreach my $k (keys %URL_intHost_hash) {
 		if ($separator == 0) {
 			# This is Master
@@ -222,6 +223,6 @@ sub Install_SGE {
 			$separator++; 
 		}
 	}
-
+=cut
 }
 
