@@ -394,7 +394,7 @@ sub createInstance
 		print "\n\nPlease send questions/comments to help\@modencode.org\n\n";
 	} else {
 		$returnStr = "\n$instanceName\tHOST_NAME:\t" . $URL;
-		$returnStr = $returnStr . "\n$instanceName\tSSH_CMD:\t\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL;
+		$returnStr = $returnStr . "\n$instanceName\tSSH_CMD:\tssh -i " . $keyPair . ".pem  ubuntu@" . $URL;
 		$returnStr = $returnStr . "\n$instanceName\tTERMINATE_CMD:\tec2-terminate-instances $instanceID ";
 		$returnStr = $returnStr . "\n";
 	}
