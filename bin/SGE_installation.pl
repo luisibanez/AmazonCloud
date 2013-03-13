@@ -131,9 +131,11 @@ sub GetURL {
 		$intHostname = $instance_info[4];
 		$IP = $instance_info[17];
 	} else {
+		print "\n======================================================================================= \n";
 		print "\nWARNING:";
-		print "\n\tCurrent instance: $instanceName \($instanceID\) is either terminated or shutting-down.";
+		print "\n\tCurrent instance: $instanceName \($instanceID\) is either terminated or shutting-down";
 		print "\n\tSkipping this instance for SGE installation ... Continue ...\n\n";
+		print "======================================================================================= \n\n";
 	}
 	return ($URL, $intHostname, $IP);
 }
@@ -170,7 +172,7 @@ sub Get_Instance_Info_Hash {
 		$instanceID = $current_instance[2];
 
 		# Configure instance URL and internal hostname
-		($instanceURL, $intHostname, $intIP) = GetURL($instanceID, $instanceName);
+		($instanceURL, $intHostname, $intIP) = GetURL($instanceID, $instancePrefix);
 		
 		if ($instanceURL ne "") {
 			
