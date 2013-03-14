@@ -1,2 +1,4 @@
 .DS_Store
 *.ajen
+
+bin/SGE_installation.pl
