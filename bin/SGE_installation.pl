@@ -209,8 +209,11 @@ sub Install_SGE {
 	my $instanceType = shift;
 
 	my %instance_info = Get_Instance_Info_Hash($instancePrefix);
+	my @list_URL = keys %instance_info;
+	
 
 	print Dumper(\%instance_info);
+	print Dumper(\@list_URL);
 	# Other varaiables
 	my $separator = 0;
 	my $numCores = GetCPU($instanceType);
