@@ -6,7 +6,7 @@
 #INSTANCE_NAME: YOUR_INSTANCE_NAME
 KEY_PAIR: Ajen_2013Coop
 SECURITY_GROUP: SGE_group
-INSTANCE_NAME: SGE_test
+INSTANCE_NAME: dummy
 
 #
 # AUTHORIZED_PORTS will be ignored if the security group defined above exists.
@@ -28,7 +28,7 @@ AMI: ami-c65dcbaf
 # number of instances to launch
 #
 #NUMBER_OF_INSTANCES: 1
-NUMBER_OF_INSTANCES: 4
+NUMBER_OF_INSTANCES: 6
 
 #INSTANCE_TYPE: m1.medium
 INSTANCE_TYPE: t1.micro
