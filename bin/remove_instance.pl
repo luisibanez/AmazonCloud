@@ -2,6 +2,7 @@
 
 use warnings;
 use strict;
+use File::Basename;
 use Scalar::Util qw(looks_like_number);
 
 #
@@ -32,7 +33,7 @@ printf ("\n %-15s \t %-30s", "INSTANCE_NAME:", $instanceName);
 print "\n";
 
 # Delete the instnace
-delete_instnace($instanceName);
+get_target($instanceName);
 
 #function declarations
 #=================================================================
@@ -77,14 +78,15 @@ sub checkEnvironments
 #
 # Function to get the instnaces' IDs.
 #
-sub getInstanceID {
+sub get_target {
 
 	my $instanceName = shift;
 
 	# Find the instacne that we want to delete and collect the output
 	my $cmdOut = `ec2-describe-instances | grep "$instanceName"`;
-	my %ID_table;
+	my $allInstance = "";
 	my $counter = 1;
+	my %ID_table;
 	my $instanceID;
 	my $instanceURL;
 	my $index;
@@ -92,10 +94,12 @@ sub getInstanceID {
 
 	# Construct ID_table
 	if (length($cmdOut) == 0) {
+
 		print "\nERROR: ";
 		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instanceName in the config.txt";
 		print "\n\tPlease check your config file ... \n\n";
 		exit (2);
+
 	} else {
 
 		my @line = split("\n", $cmdOut);
@@ -104,29 +108,29 @@ sub getInstanceID {
 				my @target = split("\t", $i);
 				$instanceID = $target[2];
 				$instanceURL = GetURL($instanceID);
-
 				# Check if the instance is still running or terminated
 				if (length($instanceURL) == 0) {
 					$instanceURL = "Terminated";
 				}
-
 				# Concatenate two striing variables and return a newe string representing specific instances 
+				$allInstance = $instanceID." ".$allInstance;
 				my $instance = $instanceID." ".$instanceURL;
 				$ID_table{$counter} = $instance;
-				
 				$counter++;
 			}
 		}
-		# Add exit option
+		# Add remove_all / exit option
+		$ID_table{"A"} = "Terminate All";
 		$ID_table{"Q"} = "Exit";
+
 	}
 
 	# Check the size of the ID_table
 	my $hash_size = keys %ID_table;
 
 	# Prompt to let user choose which instance to terminate
-	if ($hash_size == 1) {
-		return $ID_table{0};
+	if ($hash_size == 3) {
+		return $ID_table{"1"};
 	} else {
 		print "\n\nThere are more than one instances with the same INSTANE_NAME: $instanceName\.";
 		START:
@@ -142,20 +146,32 @@ sub getInstanceID {
 			print "\n\t-  Action has been canceled.";
 			print "\n\t-  No instance is terminated.\n\n";
 			exit (0);
+		} elsif ($index eq "A" || $index eq "a") {
+			print "\nTerminating wrong instances could potentially make your life mesirable\.\n";
+			print "I have accidentally terminated wrong instance. I got suspended from using AWS for 3 months :( !\n";
+			print "Please be extra cautious !!\n";	
+			print "Are you sure you want to terminate all instance [Y/n] ? ";
+			chomp($ans = <STDIN>);
 		} elsif ($index ne "Q" && !looks_like_number($index)) {
 			print "\n\t-  Invalid inputs ...\n";
 			goto START;
 		} elsif ($index > ($hash_size - 2)) {
 			print "\n\t-  Selected instance does not exist.\n";
 			goto START;
+		} else {
+			print "\nTerminating wrong instances could potentially make your life mesirable\.\n";
+			print "I have accidentally terminated wrong instance. I got suspended from using AWS for 3 months :( !\n";
+			print "Please be extra cautious !!\n";	
+			print "Are you sure \" $index: $ID_table{$index} \" is the instance that you want to terminate [Y/n] ? ";
+			chomp($ans = <STDIN>);
 		}
-
-		print "\nTerminating wrong instances could potentially make your life mesirable\.\n";
-		print "Are you sure \" $index: $ID_table{$index} \" is the instance that you want to terminate [Y/n] ? ";
-		chomp($ans = <STDIN>);
 	}
 	if ($ans eq "y" || $ans eq "Y") {
-		return $ID_table{$index};
+		if ($index eq "A" || $index eq "a") {
+			delete_instnace($allInstance, $index);
+		} else {
+			delete_instnace($ID_table{$index}, $index);
+		}
 	} else {
 		print "\n-  Action has been canceled.";
 		print "\n-  No instance is terminated.\n\n";
@@ -165,60 +181,93 @@ sub getInstanceID {
 }
 
 
+sub check_termination_status {
+
+	my $timer = shift;
+	my $instance_to_delete = shift;
+	my @cmdOut = shift;
+	my $complete;
+
+	#sleep for 3s before trying again
+	sleep 3;
+	# Deleting the instance and collect the output
+	@cmdOut = `ec2-terminate-instances $instance_to_delete`;
+	foreach my $i (@cmdOut) {
+		my @line = split(" ", $i);
+		my $previous_status = $line[2];
+		chomp($previous_status);
+		my $current_status = $line[3];
+		chomp($current_status);
+		if ($previous_status eq "terminated" && $current_status eq "terminated") {
+			$complete = 1;
+		} elsif ($previous_status ne "terminated" || $current_status ne "terminated"){
+			$complete = 0;
+			return ($complete, $timer);
+		}
+		 elsif ($timer == 0) {
+			# After 120s (2 mins) has passed, we will automatially bounce the execution due to excessive time spent on waiting for response.
+			print "\nUnable to delete instances. Please contact Amazon or terminate your instance through Amazon's web ineterface\n\n";
+			exit (2);
+		} else {
+			$timer --; 
+		}
+	}
+
+	return ($complete, $timer);
+
+}
+
+
+
 sub delete_instnace {
 
 	#
 	my $complete = 0;
-	my $counter = 40;
-	my $cmdOut;
+	my $timer = 40;
+	my @cmdOut;
 
 	# Collect necessary information about the instnace before proceed with deletion
-	my $instanceName = shift;
-	my $instance = getInstanceID($instanceName);
-	my @target = split(" ", $instance);
-	my $instanceID = $target[0];
-	my $instanceStatus = $target[1];
-	
-	if ($instanceStatus eq "Terminated") {
-		print "\nInstance name: $instanceName \($instanceID\) has alread been terminated ... ";
-		print "\nNo action requires!\n\n";
-		exit (0);
-	}
+	my $instance_to_delete = shift;
+	my $signle_all = shift;
 
-	print "\nDeleting instance: $instanceName \($instanceID\) ... it may take a few secons ... \n\n";
-	# Deleting the instance and collect the output
-	$cmdOut = `ec2-terminate-instances $instanceID`;
-	if ($? == 0) {
+
+	if ($signle_all eq "A") {
 		
-		while (!$complete) {
-	
-			#sleep for 3s before trying again
-			sleep 3;
-			# Deleting the instance and collect the output
-			$cmdOut = `ec2-terminate-instances $instanceID`;
-			my @line = split(" ", $cmdOut);
-			my $previous_status = $line[2];
-			chomp($previous_status);
-			my $current_status = $line[3];
-			chomp($current_status);
-			
-			if ($previous_status eq "terminated" && $current_status eq "terminated") {
-		 		$complete = 1;
-		 	} elsif ($counter == 0) {
-		 		# After 120s (2 mins) has passed, we will automatially bounce the execution due to excessive time spent on waiting for response.
-		 		print "\nUnable to delete instance: $instanceID. Please contact Amazon or terminate your instance through Amazon's web ineterface\n\n";
-		 		exit (2);
-		 	}
-		 	else {
-		 		$counter --; 
-		 	}
-
+		print "\nDeleting all instances ... it may take a few secons ... \n\n";
+		@cmdOut = `ec2-terminate-instances $instance_to_delete`;
+		if ($? == 0) {
+			while (!$complete) {
+				($complete, $timer) = check_termination_status($timer, $instance_to_delete, \@cmdOut);
+			}
+			print "\nAll instances have been terminated ... Done ...\n\n";
 		}
-		print "\nInstance: $instanceID has been terminated ... Done ...\n\n";
 
 	} else {
-		print "ERROR: Invalid instanceID: $instanceID ... \n\n";
-		exit (2);
+
+		my @target = split(" ", $instance_to_delete);
+		my $instance_to_delete = $target[0];
+		my $instanceStatus = $target[1];
+	
+		if ($instanceStatus eq "Terminated") {
+			print "\nInstance name: $instanceName \($instance_to_delete\) has alread been terminated ... ";
+			print "\nNo action requires!\n\n";
+			exit (0);
+		}
+
+		print "\nDeleting instance: $instanceName \($instance_to_delete\) ... it may take a few secons ... \n\n";
+		# Deleting the instance and collect the output
+		@cmdOut = `ec2-terminate-instances $instance_to_delete`;
+		if ($? == 0) {
+		
+			while (!$complete) {
+				($complete, $timer) = check_termination_status($timer, $instance_to_delete, \@cmdOut);
+			}
+			print "\nInstance: $instance_to_delete has been terminated ... Done ...\n\n";
+
+		} else {
+			print "ERROR: Invalid instanceID: $instance_to_delete ... \n\n";
+			exit (2);
+		}
 	}
 
 }
