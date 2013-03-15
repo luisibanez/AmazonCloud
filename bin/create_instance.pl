@@ -1,6 +1,6 @@
 #!/usr/bin/perl 
 
-#
+
 # written by the following people:
 # Fei-Yang(Arthur) Jen, arthur20249@gmail.com
 # Quang Trinh, quang.trinh@gmail.com
@@ -12,7 +12,7 @@ use File::Basename;
 use Parallel::ForkManager;
 
 
-#function calls
+# Function calls
 #=================================================================
 if(@ARGV != 1)
 {
@@ -70,6 +70,7 @@ printf ("\n %-15s \t %-30s", "INSTANCE_TYPE:", $instanceType);
 printf ("\n %-15s \t %-30s", "REGION:", $region);
 printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
 printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
+printf ("\n %-15s \t %-30s", "NUMBER_OF_INSTANCES:", $numberOfInstances);
 print "\n";
 	
 
