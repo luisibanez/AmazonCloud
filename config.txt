@@ -1,29 +1,42 @@
-#
-# 
-#
+###############################################
+## Basic parameters to launch instances with ##
+###############################################
 KEY_PAIR: YOUR_KEYPAIR_NAME
 SECURITY_GROUP: YOUR_SECURITY_GROUP_NAME
 INSTANCE_NAME: YOUR_INSTANCE_NAME
 
-#
-# AUTHORIZED_PORTS will be ignored if the security group defined above exists.
-# List all the ports (single or a range) that you would like to enable and separate them with a ","
-#
-# For example: 
-# AUTHORIZED_PORTS: 22, 45, 80, 13200-14300
-#
-AUTHORIZED_PORTS: 22, 80
 
-#
-# Amazon Machine Image (AMI) ID to be used
-# 
+###############################################################################################################
+## AUTHORIZED_PORTS_* will be ignored if the security group defined above exists.			     ##
+## List all the ports (single or a range) that you would like to enable and separate them with a ","         ##
+## You can also specify the soucre of the ports.							     ##
+##													     ##
+## For example:												     ##
+##	AUTHORIZED_PORTS_TCP: 22:10.0.0.0/8, 80:192.168.32.4/32						     ##
+##													     ##
+## The semi-colon is used if you would like to allow certain IP addresses to interact with the instance over ##	
+## some certain ports. If there is no source assigned to a port, then the default is 0.0.0.0/0. The port is  ##
+## open to all IP addesses.										     ##
+##                											     ##
+## AUTHORIZED_PORT_UDP is optional, some services require UDP ports some don't.                              ##
+## We strongerly recommand TCP port 22 as it allows you to ssh to your instance securely with your key-pair. ##
+###############################################################################################################
+AUTHORIZED_PORTS_TCP: 22, 80
+AUTHORIZED_PORTS_UDP:
+
+##############################################
+## Amazon Machine Image (AMI) ID to be used ##
+############################################## 
 AMI: YOUR_AMI_ID
 
-# 
-# number of instances to launch
-#
+################################### 
+## number of instances to launch ##
+###################################
 NUMBER_OF_INSTANCES: 1
 
+####################
+## Instance's Bio ##
+####################
 INSTANCE_TYPE: t1.micro
 REGION: us-east-1
 AVAILABILITY_ZONE: us-east-1a
