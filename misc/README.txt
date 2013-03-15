@@ -5,7 +5,7 @@
 
 
 SYSTEM PREREQUISITES
-===========================================================================================================
+===============================================================================================
 
 1. Linux software Requirements  
 
@@ -43,7 +43,7 @@ SYSTEM PREREQUISITES
 
 
 TOOL SETUP and SHARE MOUNT
-===========================================================================================================
+===============================================================================================
 
 1. setup modENCODE tools for alignments and peak calls
   >. cd /modencode
@@ -70,7 +70,7 @@ TOOL SETUP and SHARE MOUNT
 
 
 DOWNLOAD and CONVERT INPUT DATA: FASTQ, FASTA, BAM, SAI, SAM
-===========================================================================================================
+===============================================================================================
 
 1. Make fastq directory
   >. mkdir $ANALYSIS_DIR/fastq ; cd $ANALYSIS_DIR/fastq
@@ -113,7 +113,7 @@ DOWNLOAD and CONVERT INPUT DATA: FASTQ, FASTA, BAM, SAI, SAM
 
 
 EXECUTE COMMANDS
-===========================================================================================================
+===============================================================================================
 
 1. Make output directory
   >. mkdir ${ANALYSIS_DIR}/macs2_output; cd ${ANALYSIS_DIR}/macs2_output
@@ -129,7 +129,7 @@ EXECUTE COMMANDS
 
 
 OTHERS
-==================================================================================================================
+===============================================================================================
 
 * other things students can do:
   - Use Unix commands to count the number of reads in all the FASTQ files - see http://en.wikipedia.org/wiki/FASTQ_format.  Each entry in the FASTQ file consists of 4 lines so technically, students can just count the number of lines and divides by 4.  
