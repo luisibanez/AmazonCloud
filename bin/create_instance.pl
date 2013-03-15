@@ -26,7 +26,7 @@ my $configFile = $ARGV[0];
 checkEnvironments();
 
 # Parse the config file
-my ($ami, $numberOfInstances, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort) = parseOptions($configFile);
+my ($ami, $numberOfInstances, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort_TCP, $authorizedPort_UDP) = parseOptions($configFile);
 
 	
 # get the default region and availability zone if users didn't put them in config file
@@ -69,13 +69,15 @@ printf ("\n %-15s \t %-30s", "SECURITY_GROUP:", $securityGroup);
 printf ("\n %-15s \t %-30s", "INSTANCE_TYPE:", $instanceType);
 printf ("\n %-15s \t %-30s", "REGION:", $region);
 printf ("\n %-15s \t %-30s", "AVAILABILITY_ZONE:", $availabilityZone);
-printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS:", $authorizedPort);
+printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS_TCP:", $authorizedPort_TCP);
+printf ("\n %-15s \t %-30s", "AUTHORIZED_PORTS_UDP:", $authorizedPort_UDP);
 printf ("\n %-15s \t %-30s", "NUMBER_OF_INSTANCES:", $numberOfInstances);
 print "\n";
 	
 
 createKeypair($keyPair,$region);
-createSecurityGroup($securityGroup, $region, $authorizedPort);
+createSecurityGroup($securityGroup, $region, $authorizedPort_TCP, $authorizedPort_UDP);
+
 
 my $multiInstances = 0;
 my $multiInstancesOutput = "";
@@ -91,7 +93,7 @@ for (my $counter = 1; $counter <= $numberOfInstances; $counter++) {
 		$instanceName = $instanceName . "_" . $counter;
 	}
 	printf ("\nCreating Instance: $instanceName ...\n");
-	my $str = createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone, $multiInstances );
+	my $str = createInstance($ami, $keyPair, $securityGroup, $instanceType, $instanceName, $region, $availabilityZone, $multiInstances);
 	if (length($str) > 0) {
 		print $str;
 	}
@@ -161,14 +163,19 @@ sub parseOptions
 			# replace spaces with '_'
 			$instanceName =~ s/\ /_/g;
 		} 
-		elsif($i =~ /^AUTHORIZED_PORTS:/)
+		elsif($i =~ /^AUTHORIZED_PORTS_TCP:/)
 		{
-			$authorizedPort = $line[1];
-			chomp($authorizedPort);
+			$authorizedPort_TCP = $line[1];
+			chomp($authorizedPort_TCP);
+		}
+		elsif($i =~ /^AUTHORIZED_PORTS_UDP:/)
+		{
+			$authorizedPort_UDP = $line[1];
+			chomp($authorizedPort_UDP);
 		}
 	}
 	close FILE;
-	return ($ami, $numberOfInstances, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort);
+	return ($ami, $numberOfInstances, $keyPair, $securityGroup, $instanceType, $region, $availabilityZone, $instanceName, $authorizedPort_TCP, $authorizedPort_UDP);
 
 }
 
@@ -208,42 +215,90 @@ sub createKeypair
 	}
 }
 
-#function for creating the security group, group options maybe set to be more flexible later
+sub enable_ports {
+
+	my $group = shift;
+	my $authorizedPort = shift;
+	my $port_type = shift;
+	my $cmdOutput;
+	my $size;
+	my $ans;
+	my $port_22 = 0;
+
+	# Proceed to add all the ports
+		my @ports = split (",", $authorizedPort);
+		foreach my $i (@ports) {
+			$i =~ s/^\s+//;
+			my @j = split (":", $i);
+			if ($j[0] eq "22") {
+				$port_22 = 1;
+			}
+			$size = @j;
+			if ($size == 2) {
+			 	$cmdOutput = `ec2-authorize $group -P $port_type -p $j[0] -s $j[1]`;
+			 	print "\nAuthorized $port_type Port: $j[0]; Source: $j[1] ... created ...\n";
+			} else {
+				$cmdOutput = `ec2-authorize $group -P $port_type -p $i`;
+				print "\nAuthorized $port_type Port: $i; Source: 0.0.0.0/0 ... created ...\n";
+			} 
+		}
+		if (!$port_22 && $port_type eq "TCP") {
+			print "\n\n=========================================================================\n";
+			print "\nNOTE:\n";
+			print "\n\tAccording to your config file, you did not enable port 22 (SSH).\n";
+			print "\tFor your convenience, prot 22 is recommanded to enable as you can ssh to your instance securely  with your specific key-pair!\n";
+			print "\n\n=========================================================================\n";
+			START:
+			print "\nWould you like to enable port 22 ? [Y/n]";
+			chomp($ans = <STDIN>);
+			if ($ans eq "Y" || $ans eq "y") {
+				$cmdOutput = `ec2-authorize $group -P $port_type -p 22`;
+				print "\nAuthorized $port_type Port: 22; Source: 0.0.0.0/0 ... created ...\n";
+			} elsif ($ans eq "N" || $ans eq "n") { 
+				print "\nskip authorizing port 22 ...\n";
+			} else {
+				print "\nInvalid inputs\n";
+				goto START;
+			}
+		}
+}
+
+# Function for creating the security group, group options maybe set to be more flexible later
 sub createSecurityGroup 
 {
 	my $group = shift;
 	my $region = shift;
-	my $authorizedPort = shift;
+	my $TCP_ports = shift;
+	my $UDP_ports = shift;
+	my $size;
 
 	my $cmdOutput = `ec2-describe-group --region $region `;
 
 	#if security group exists, skip process otherwise create the group
-	if (($cmdOutput =~ /^GROUP/) && ($cmdOutput =~ /$group/)) 
-	{
-		print "\nSecurity group '$group' exists ... skip creating it ...\n";
-	}
-	else 
-	{
+	if (($cmdOutput =~ /^GROUP/) && ($cmdOutput =~ /$group/)) {
+		print "\nSecurity group '$group' exists ... skip creating it ...\n\n";
+	} else {
 
 		# Check if there has any value been specified in the config file for AUTHORIZED_PORTS
-		if (length($authorizedPort) == 0) {
+		if (length($TCP_ports) == 0) {
 			print "\n\nCreating security group '$group', but no port is assigned to AUTHORIZED_PORTS!\n";
-			print "Please check your config file to make sure all the paramenters have been specified!\n\n";
+			print "Please check your config file to make sure all the paramenters have been specified!\n";
+			print "Port: 22 is the recommanded port to enable as it allows you to ssh to the instance with the key-pair!\n\n";
 			exit (1);
-		}
+		} 
+
 		print "\nCreating security group '$group' \n";
 		# Create a security group first
 		my $description = "Security group ( created by $0 )";
 		$cmdOutput = `ec2-create-group $group --region $region -d \" $description \"`;
 		
-		# Proceed to add all the ports
-		my @ports = split (",", $authorizedPort);
-		foreach my $i (@ports) {
-			$i =~ s/^\s+//;
-			$cmdOutput = `ec2-authorize $group -P tcp -p $i`;
-			print "\nAuthorized Port: $i ... created ...\n";
-		}
-		print "\nAuthorized port Done ...\n";
+		# TCP Enable:
+		enable_ports($group, $TCP_ports, "TCP");
+		# UDP Enable:
+		enable_ports($group, $UDP_ports, "UDP");
+
+		END_point:
+		print "\nAuthorized port Done ...\n\n";
 	}
 }
 
