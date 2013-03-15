@@ -3,9 +3,11 @@
 ###################
 
 
+
+SYSTEM PREREQUISITES
 ======================================================================================
 
-1. Linux softwares Requirements  
+1. Linux software Requirements  
 
  Use the AMI ID ami-edeb4384 to launch an instance on Amazon Cloud 
  Use m1.large so you can run bwa on mutliple cores
@@ -39,8 +41,9 @@
   >. sudo python setup.py install
 
 
-==========================================================================================
 
+TOOL SETUP and SHARE MOUNT
+==========================================================================================
 
 1. setup modENCODE tools for alignments and peak calls
   >. cd /modencode
@@ -64,20 +67,22 @@
   >. cd $ANALYSIS_DIR
   >. sudo chown ubuntu:ubuntu $ANALYSIS_DIR
 
-======================================================================================
 
+
+DOWNLOAD and CONVERT INPUT DATA: FASTQ, FASTA, BAM, SAI, SAM
+======================================================================================
 
 1. Make fastq directory
   >. mkdir $ANALYSIS_DIR/fastq ; cd $ANALYSIS_DIR/fastq
 
 2. Test data set 1
-   For now, get them from the ftp site
-   * Students will get them from the 1TB snapshot
-   * NOTE: ftp.modencode.org is actually running on Amazon Cloud 
-     >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz
-     >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz
-     >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz
-     >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz
+    # For now, get them from the ftp site
+    * Students will get them from the 1TB snapshot
+    * NOTE: ftp.modencode.org is actually running on Amazon Cloud 
+  >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz
+  >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz
+  >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz
+  >. wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz
 
 3. Make fasta directory
   >. mkdir $ANALYSIS_DIR/fasta; cd $ANALYSIS_DIR/fasta
@@ -105,6 +110,9 @@
 9. Convert sam to bam 
   >. for i in `ls *.sam`; do echo ; echo "samtools view -Sbo ${i}.bam $i "; done 
 
+
+
+EXECUTE COMMANDS
 ==================================================================================================================
 
 1. Make output directory
@@ -118,8 +126,10 @@
   >. macs2 callpeak -t ../bam/3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz.sai.sam.bam  -c ../bam/3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz.sai.sam.bam -f BAM -g ce -n rep2  -B -q 0.01
 
 
-==================================================================================================================
 
+
+OTHERS
+==================================================================================================================
 
 * other things students can do:
   - Use Unix commands to count the number of reads in all the FASTQ files - see http://en.wikipedia.org/wiki/FASTQ_format.  Each entry in the FASTQ file consists of 4 lines so technically, students can just count the number of lines and divides by 4.  
