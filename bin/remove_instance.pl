@@ -95,10 +95,12 @@ sub get_target {
 	# Construct ID_table
 	if (length($cmdOut) == 0) {
 
-		print "\nERROR: ";
-		print "\n\tThere does not exist an instance with the given INSTANCE_NAME: $instanceName in the config.txt";
-		print "\n\tPlease check your config file ... \n\n";
-		exit (2);
+		print "\nWARNING: ";
+		print "\n\tThere does not exist instances with the given INSTANCE_NAME: $instanceName";
+		print "\n\tMaybe all the instances with the given name have been terminated";
+		print "\n\tPlease check your config file to make sure INSTANCE_NAME is defined to the name you want ... ";
+		print "\n\nAbort(1)\n\n";
+		exit (1);
 
 	} else {
 
