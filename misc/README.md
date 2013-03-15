@@ -1,4 +1,4 @@
-
+NY-Albany.AMI
 
 
 Use the AMI ID ami-edeb4384 to launch an instance on Amazon Cloud 
