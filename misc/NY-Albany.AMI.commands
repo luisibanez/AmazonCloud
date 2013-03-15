@@ -1,0 +1,196 @@
+
+
+
+Use our AMI ami-edeb4384 , launch an instance 
+
+Once the instance is up and running, login to the instance, 
+
+
+sudo apt-get update 
+
+sudo apt-get install gcc
+sudo apt-get install make
+sudo apt-get install git 
+sudo apt-get install zlib1g-dev
+
+
+
+
+
+# setup softwares for alignments and peak calls
+
+# Dev package 
+# sudo apt-get build-up python
+
+# install Python
+wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2
+tar -xvf Python-2.7.3.tar.bz2
+cd Python-2.7.3
+./configure --prefix=/usr/local/lib/python2.7  --with-zlib
+make 
+sudo make install
+sudo chmod ag+w /usr/local/lib/python2.7/site-packages
+sudo chmod ag+wx /usr/local/bin
+
+# Numpy (need to install git)
+git clone git://github.com/numpy/numpy.git numpy
+cd numpy
+python setup.py build
+python setup.py install
+
+
+cd /modencode
+wget http://data.modencode.org/modENCODE_Galaxy/tarballs/tools.tar
+tar xvf tools.tar 
+
+
+# and set your environments
+cd /modencode/tools  
+. env.sh 
+
+
+mount data to server 
+commands to mount and insgtall client
+
+
+ANALYSIS_DIR="/mnt/data"
+sudo mkdir $ANALYSIS_DIR
+cd $ANALYSIS_DIR
+sudo chown ubuntu:ubuntu $ANALYSIS_DIR
+
+##########################################################
+
+mkdir $ANALYSIS_DIR/fastq ; cd $ANALYSIS_DIR/fastq
+
+# test data set 1
+# for now, get them from the ftp site
+# students will get them from the 1TB snapshot
+# NOTE: ftp.modencode.org is actually running on Amazon Cloud 
+wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz
+wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz
+wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz
+wget ftp://ftp.modencode.org/all_files/cele-raw-1/3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz
+
+##########################################################
+
+mkdir $ANALYSIS_DIR/fasta; cd $ANALYSIS_DIR/fasta
+
+# worm reference genome
+wget http://data.modencode.org/modENCODE_Galaxy/Test_Data/fasta/WS220.fasta
+
+# use bwa to index the worm genome - for information on bwa commands, see http://bio-bwa.sourceforge.net/
+bwa index -a is WS220.fasta 
+
+##########################################################
+
+mkdir $ANALYSIS_DIR/bam  ; cd $ANALYSIS_DIR/bam 
+
+# students should use at least m1.large so they can do the alignment on multiple cores 
+# alignment using two threads ( -t 2 )
+# output of alignment is in sai format 
+for i in `ls $ANALYSIS_DIR/fastq/*gz`; do echo ; echo "bwa aln -t 2 $ANALYSIS_DIR/fasta/WS220.fasta $i > `basename $i`.sai"; done 
+
+# convert sai to sam format - see http://samtools.sourceforge.net/SAM1.pdf
+for i in `ls *.sai`; do echo ; fq=`basename $i .sai`; echo "bwa samse $ANALYSIS_DIR/fasta/WS220.fasta $i $ANALYSIS_DIR/fastq/$fq > ${i}.sam "; done 
+
+
+# convert sam to bam 
+for i in `ls *.sam`; do echo ; echo "samtools view -Sbo ${i}.bam $i "; done 
+
+
+##########################################################
+
+mkdir ${ANALYSIS_DIR}/macs2_output; cd ${ANALYSIS_DIR}/macs2_output
+
+# call peaks with macs2 - see https://github.com/taoliu/MACS/
+# rep1
+macs2 callpeak -t ../bam/3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz.sai.sam.bam  -c ../bam/3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz.sai.sam.bam -f BAM -g ce -n rep1  -B -q 0.01
+
+
+# rep2 
+macs2 callpeak -t ../bam/3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz.sai.sam.bam  -c ../bam/3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz.sai.sam.bam -f BAM -g ce -n rep2  -B -q 0.01
+
+
+
+
+
+# other things students can do:
+ - Use Unix commands to count the number of reads in all the FASTQ files - see http://en.wikipedia.org/wiki/FASTQ_format.  Each entry in the FASTQ file consists of 4 lines so technically, students can just count the number of lines and divides by 4.  
+ - write a small program to count the number of A,C,G,T bases in the worm genome.  The worm genome is in FASTA format - see http://en.wikipedia.org/wiki/FASTA_format.  Students can write his/her program in any language
+ - count the number of reads aligned to the worm genome.  Use samtools to achive this 
+  samtools view -f 0x0004 bam.file | wc -l   
+
+
+
+
+
+
+
+
+
+
+wget http://data.modencode.org/modENCODE_Galaxy/Test_Data/bam/3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz%23Cele_WS220%23gei-11%23rep_all%23ChIP.bam
+wget http://data.modencode.org/modENCODE_Galaxy/Test_Data/bam/3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz%23Cele_WS220%23gei-11%23rep_all%23input.bam
+wget http://data.modencode.org/modENCODE_Galaxy/Test_Data/bam/3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz%23Cele_WS220%23gei-11%23rep_all%23ChIP.bam
+wget http://data.modencode.org/modENCODE_Galaxy/Test_Data/bam/3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz%23Cele_WS220%23gei-11%23rep_all%23input.bam
+
+
+##########################################################
+running MACS2 
+
+mkdir ${ANALYSIS_DIR}/macs2_output; cd ${ANALYSIS_DIR}/macs2_output
+
+# rep1
+macs2 callpeak -t 3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#ChIP.bam -c 3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#input.bam -f BAM -g ce -n macs2_output/3066_Snyder_GEI-11_GFP_L3_rep1  -B -q 0.01
+
+# rep2 
+macs2 callpeak -t 3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz#Cele_WS220#gei-11#rep_all#ChIP.bam -c 3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz#Cele_WS220#gei-11#rep_all#input.bam -f BAM -g ce -n macs2_output/3066_Snyder_GEI-11_GFP_L3_rep2  -B -q 0.01
+
+
+##########################################################
+running IDR
+
+mkdir ${ANALYSIS_DIR}/macs2_output/IDR_out ; cd /modencode/softwares/peakcallers/IDR/idrCode ; Rscript batch-consistency-analysis.r ${ANALYSIS_DIR}/macs2_output/3066_Snyder_GEI-11_GFP_L3_rep1_peaks.encodePeak ${ANALYSIS_DIR}/macs2_output/3066_Snyder_GEI-11_GFP_L3_rep2_peaks.encodePeak 1000 ${ANALYSIS_DIR}/macs2_output/IDR_out/3066 0 F  p.value
+
+
+##########################################################
+running IDR-plot 
+
+mkdir ${ANALYSIS_DIR}/macs2_output/IDR_out ; cd /modencode/softwares/peakcallers/IDR/idrCode ; Rscript batch-consistency-plot.r 2 ${ANALYSIS_DIR}/macs2_output/IDR_out/3066 ${ANALYSIS_DIR}/macs2_output/IDR_out/3066 ${ANALYSIS_DIR}/macs2_output/IDR_out/3066
+
+
+##########################################################
+sudo apt-get install ghostscript
+ps2pdf 3066-plot.ps 
+view 3066-plot.pdf 
+
+
+
+
+
+##########################################################
+
+MACS14 Test:
+macs14 -t 3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#ChIP.bam -c 3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#input.bam -f BAM -g ce -n chip_input.bam.macs14.out -m 5,30 -p 0.01
+
+
+
+
+##########################################################
+PeakRanger:
+ranger --format bam -t 0 --verbose -d 3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#ChIP.bam -c 3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#input.bam  -o ChIP_Input.bam.ranger.out
+
+	* -t is equal to 0. 
+##########################################################
+
+SPP:
+mkdir spp_output ; 
+
+# rep1 
+Rscript  /modencode/softwares/peakcallers/SPP/spp_package/run_spp.R -npeak=300000 -savr -savp -rf   -c=3066_Snyder_GEI-11_GFP_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#ChIP.bam -i=3066_Snyder_GEI-11_Input_L3_rep1.fastq.gz#Cele_WS220#gei-11#rep_all#input.bam -out=spp_output/phantomStats.tab -odir=spp_output 
+
+
+# rep2
+Rscript  /modencode/softwares/peakcallers/SPP/spp_package/run_spp.R -npeak=300000 -savr -savp -rf   -c=3066_Snyder_GEI-11_GFP_L3_rep2.fastq.gz#Cele_WS220#gei-11#rep_all#ChIP.bam -i=3066_Snyder_GEI-11_Input_L3_rep2.fastq.gz#Cele_WS220#gei-11#rep_all#input.bam -out=spp_output/phantomStats.tab -odir=spp_output 
+
+
