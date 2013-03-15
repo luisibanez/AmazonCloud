@@ -1,44 +1,43 @@
 
 
 
-Use our AMI ami-edeb4384 , launch an instance 
+Use the AMI ID ami-edeb4384 to launch an instance on Amazon Cloud 
+Use m1.large so you can run bwa on mutliple cores
 
-Once the instance is up and running, login to the instance, 
-
+Once the instance is up and running, login to the instance, do the following
 
 sudo apt-get update 
-
 sudo apt-get install gcc
 sudo apt-get install make
 sudo apt-get install git 
 sudo apt-get install zlib1g-dev
 
+sudo ln -s /lib/x86_64-linux-gnu/libz.so.1 /lib/libz.so
 
 
-
-
-# setup softwares for alignments and peak calls
-
-# Dev package 
-# sudo apt-get build-up python
 
 # install Python
 wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2
 tar -xvf Python-2.7.3.tar.bz2
 cd Python-2.7.3
-./configure --prefix=/usr/local/lib/python2.7  --with-zlib
+
+./configure 
 make 
 sudo make install
-sudo chmod ag+w /usr/local/lib/python2.7/site-packages
-sudo chmod ag+wx /usr/local/bin
 
-# Numpy (need to install git)
+
+
+
+# install Numpy 
 git clone git://github.com/numpy/numpy.git numpy
 cd numpy
-python setup.py build
-python setup.py install
+sudo python setup.py build
+sudo python setup.py install
 
 
+
+
+# setup modENCODE tools for alignments and peak calls
 cd /modencode
 wget http://data.modencode.org/modENCODE_Galaxy/tarballs/tools.tar
 tar xvf tools.tar 
@@ -49,8 +48,17 @@ cd /modencode/tools
 . env.sh 
 
 
+
+
+
+
+
 mount data to server 
 commands to mount and insgtall client
+
+
+
+
 
 
 ANALYSIS_DIR="/mnt/data"
